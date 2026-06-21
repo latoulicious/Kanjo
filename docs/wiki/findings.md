@@ -54,4 +54,20 @@ Format per finding:
 - severity: medium (latent; not triggered by accounts)
 - location: api/internal/store/errors.go:29-30
 - problem: `Classify` maps Postgres `23503` (foreign_key_violation) unconditionally to `ErrInUse` → 409 "in use". Correct for parent delete-restrict, but a child INSERT/UPDATE with a bad FK also raises `23503` and would surface the wrong "in use" message instead of a 400/404-style "bad reference". The accounts module has no outbound FK on write, so the wrong path is unreachable today; it becomes reachable with the transactions module (`account_id`/`category_id`/`project_id`).
-- status: resolved (→ R-005)
+- status: resolved (→ R-005; real fix landed in transactions 2a — bad insert FK pre-validated to 400)
+
+## F-006 WriteJSON commits status before encoding
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent --base main`, transactions 2a pass) — reported "critical"
+- severity: low (latent; pre-existing, out of scope for the transactions diff)
+- location: api/internal/httpx/httpx.go:10-14
+- problem: `WriteJSON` calls `w.WriteHeader(code)` before `json.NewEncoder(w).Encode(body)`, and discards the encode error with `_`. If encoding fails mid-stream the status line is already sent, so the client gets a committed status with a truncated body and no error signal. Low practical risk here — every response body is a plain DTO/struct/slice/map that does not fail to marshal — but the shape is fragile. Shared by all modules; not introduced by the transactions module (lifted in the categories/projects pass).
+- status: open (deferred to a scoped httpx PR; decided with the user — out of scope for this feature)
+
+## F-007 shutdownTimeout shorter than WriteTimeout
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent --base main`, transactions 2a pass) — reported "minor"
+- severity: low
+- location: api/cmd/api/main.go:19
+- problem: `shutdownTimeout` is 10s while `WriteTimeout` is 30s, so a graceful shutdown can cut off an in-flight response that the write deadline would still permit. Cosmetic for this API (responses are tiny JSON that drain well within 10s); pre-existing (set in P1, alongside R-002). Not in the transactions diff.
+- status: open (deferred; decided with the user — out of scope for this feature)

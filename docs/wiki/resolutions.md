@@ -48,3 +48,10 @@ Format per resolution:
 - files: api/internal/store/errors.go
 - verification: `go build`/`go vet`/`go test` clean; accounts CRUD smoke unchanged (no write path raises 23503 except delete-restrict, still → 409 in-use).
 - constraints honored: smallest safe change; no public contract change; no speculative code; deferral recorded so it isn't orphaned.
+- follow-up (2026-06-21, transactions 2a): the deferred real fix landed. The
+  transactions service **pre-validates** `account_id`/`category_id`/`project_id`
+  (reusing the generated `Get*` queries) before insert, so a bad reference is a
+  **400**, never the parent-delete `ErrInUse` 409. `store.Classify`'s
+  23503→`ErrInUse` mapping is left untouched (still correct for delete-restrict);
+  the chosen branch keeps the blast radius inside the new module. Live-verified:
+  bad account/category/project FK on POST → 400. See `modules/transactions.md`.
