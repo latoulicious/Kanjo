@@ -16,4 +16,18 @@ Format per finding:
 - status: open | resolved (→ R-NNN)
 ```
 
-_No findings yet._
+## F-001 PORT not range-checked
+- date: 2026-06-21
+- source: CodeRabbit (`review --agent --base main`)
+- severity: low
+- location: api/internal/config/config.go:21
+- problem: PORT validated numeric only, not 1..65535. A value like `99999` passes config validation though it is not a bindable port.
+- status: resolved (→ R-001, wontfix)
+
+## F-002 http.Server missing Read/Write timeouts
+- date: 2026-06-21
+- source: CodeRabbit (`review --agent --base main`)
+- severity: low
+- location: api/cmd/api/main.go:46
+- problem: ReadTimeout and WriteTimeout unset; a slow client could hold a connection. ReadHeaderTimeout + IdleTimeout are set (matches Atelier image-svc/mail-svc).
+- status: resolved (→ R-002)

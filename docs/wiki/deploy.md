@@ -4,6 +4,12 @@ Single-origin edge (nginx) → 3-container stack on a VPS, one Cloudflare Tunnel
 hostname. Operator steps — handles **real secrets**; `.env` is git-ignored,
 never commit it.
 
+> **Drift — superseded by [ADR-0001](decisions/0001-postgres-shared-instance.md).**
+> Postgres is the **external shared `shared-postgres`** instance (network
+> `shared-db`), not a bundled container — so the live stack is **2 containers**
+> (web + api), and `POSTGRES_PASSWORD` below does not apply. This runbook is
+> rewritten when the deploy phase lands.
+
 ## Topology
 
 ```
