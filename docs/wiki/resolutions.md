@@ -48,3 +48,30 @@ Format per resolution:
 - files: api/internal/store/errors.go
 - verification: `go build`/`go vet`/`go test` clean; accounts CRUD smoke unchanged (no write path raises 23503 except delete-restrict, still → 409 in-use).
 - constraints honored: smallest safe change; no public contract change; no speculative code; deferral recorded so it isn't orphaned.
+- follow-up (2026-06-21, transactions 2a): the deferred real fix landed. The
+  transactions service **pre-validates** `account_id`/`category_id`/`project_id`
+  (reusing the generated `Get*` queries) before insert, so a bad reference is a
+  **400**, never the parent-delete `ErrInUse` 409. `store.Classify`'s
+  23503→`ErrInUse` mapping is left untouched (still correct for delete-restrict);
+  the chosen branch keeps the blast radius inside the new module. Live-verified:
+  bad account/category/project FK on POST → 400. See `modules/transactions.md`.
+
+## R-008 require fee_category_id when a fee is set  (resolves F-008)
+- date: 2026-06-22
+- change: `validateTransfer` now rejects a transfer that carries a `fee` without a
+  `fee_category_id` (new sentinel `ErrFeeCategoryRequired` → 400; mapped in the
+  handler's 400 case). No fee ⇒ still not required. Reverses the initial wontfix
+  after the user flagged that an uncategorized fee silently inflates the
+  "Uncategorized" bucket in burn/Category Breakdown (the fee is the only
+  report-visible row of a transfer — the legs are `transfer`, excluded from both
+  reports). The lone, deliberate divergence from single-entry expenses, which
+  still allow a null category.
+- files: api/internal/transaction/transfer.go, handler.go;
+  docs/wiki/modules/transactions.md
+- verification: `go build`/`go vet`/`go test ./...` clean; live smoke — transfer
+  with `fee` and no `fee_category_id` → 400 `fee_category_id is required when a fee
+  is set`; with a valid `fee_category_id` → 201 and the fee row carries the
+  category; no-fee transfer unaffected.
+- constraints honored: smallest change (one guard + sentinel); contract change is
+  the explicit fix, decided with the user; `store.Classify` + sibling modules
+  untouched.
