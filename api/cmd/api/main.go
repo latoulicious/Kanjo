@@ -37,6 +37,11 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if err := store.Migrate(ctx, cfg.DatabaseURL); err != nil {
+		return err
+	}
+	logger.Info("migrations up to date")
+
 	st, err := store.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err

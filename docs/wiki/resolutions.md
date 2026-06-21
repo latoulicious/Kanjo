@@ -27,3 +27,10 @@ Format per resolution:
 - files: api/cmd/api/main.go
 - verification: `go build ./...` and `go vet ./...` clean.
 - constraints honored: isolated to server wiring; no public contract change; no unrelated cleanup.
+
+## R-003 "Previous Behavior" backfill declined  (resolves F-003)
+- date: 2026-06-21
+- change: wontfix — no edit. The flagged entry is a docs-only scaffold where "Previous Behavior" is genuinely N/A (no code existed), and session logs are append-only (`AGENTS.md`: never overwrite) — backfilling a past entry rewrites history. Decided with the user. The P2 entry itself carries every required section.
+- files: —
+- verification: P2 session entry reviewed against the AGENTS template — complete.
+- constraints honored: respects the append-only session rule; no history rewritten.

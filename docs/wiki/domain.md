@@ -26,5 +26,9 @@ Computed from transactions; never incremented in place:
 - **Reports** — Cash Flow, Burn Rate, Category Breakdown, Balance Trend, Project
   Cost Breakdown.
 
-> Placeholder for amounts/currency/sign conventions — populate once the schema
-> lands (see `database.md`). Code is the source of truth.
+## Amounts & sign
+
+Amounts are `NUMERIC(18,2)`, single currency (IDR), always positive. A
+transaction's `direction` (`income`/`expense`/`transfer`) classifies it for
+reports; `is_inflow` carries the balance sign. Transfers are two grouped
+`transfer` rows plus an optional fee row. Full conventions: `database.md`.

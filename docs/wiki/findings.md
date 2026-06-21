@@ -31,3 +31,11 @@ Format per finding:
 - location: api/cmd/api/main.go:46
 - problem: ReadTimeout and WriteTimeout unset; a slow client could hold a connection. ReadHeaderTimeout + IdleTimeout are set (matches Atelier image-svc/mail-svc).
 - status: resolved (→ R-002)
+
+## F-003 session entry missing "Previous Behavior"
+- date: 2026-06-21
+- source: CodeRabbit (`review --agent --base main`, P2)
+- severity: low (minor)
+- location: docs/wiki/sessions/21-06-2026.md:1-61
+- problem: the historical 04:37 PM entry (docs-only scaffold) omits the "Previous Behavior" section the AGENTS template lists. Pre-existing, outside the P2 diff.
+- status: resolved (→ R-003, wontfix)

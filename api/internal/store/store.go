@@ -11,8 +11,8 @@ type Store struct {
 	pool *pgxpool.Pool
 }
 
-// Open builds the pool without connecting; pgxpool dials on first use, so the
-// API boots even while Postgres is down (/health reports it, no crash).
+// Open builds the pool without connecting; pgxpool dials on first use. The pool
+// needs no live DB, but the API requires one at boot (migrations run first).
 func Open(ctx context.Context, dsn string) (*Store, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

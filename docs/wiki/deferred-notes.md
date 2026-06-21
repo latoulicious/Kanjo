@@ -20,3 +20,12 @@ re-litigated every session.
   not guessed.
 - **Ports** — host web bind is **8090** and the API listens on **3000**. 8080 is
   avoided: Dozzle already owns it on the VPS.
+
+## DB foundation (21-06-2026)
+
+- **Decoupled migrations (one-shot job / `./api migrate` subcommand)** — not done.
+  Migrations run at boot (ADR-0002) with a 30s connect retry; that suffices at one
+  API replica. Move to a one-shot migrate step before serving only if Kanjo ever
+  runs >1 replica (avoids a concurrent `goose.Up` race).
+- **`pg_advisory_lock` around migrate** — not added. Needed only with the
+  multi-replica case above; a single replica can't race itself.
