@@ -5,10 +5,15 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/latoulicious/kanjo/api/internal/store/db"
 )
 
+// Store embeds the sqlc Queries (so modules call generated methods directly)
+// and keeps the pool for health checks and future transactions.
 type Store struct {
 	pool *pgxpool.Pool
+	*db.Queries
 }
 
 // Open builds the pool without connecting; pgxpool dials on first use. The pool
@@ -18,7 +23,7 @@ func Open(ctx context.Context, dsn string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("postgres pool: %w", err)
 	}
-	return &Store{pool: pool}, nil
+	return &Store{pool: pool, Queries: db.New(pool)}, nil
 }
 
 // Ping verifies DB reachability for /health.

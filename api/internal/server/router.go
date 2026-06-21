@@ -5,15 +5,16 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/latoulicious/kanjo/api/internal/account"
 	"github.com/latoulicious/kanjo/api/internal/store"
 )
 
-// NewMux wires routes. /health stays at root, unversioned; business routes
-// attach under /api/v1 (none yet).
+// NewMux wires routes. /health stays at root, unversioned; business modules
+// mount their own /api/v1 routes.
 func NewMux(st *store.Store, log *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", health(st, log))
-	// /api/v1 routes attach here once they exist.
+	account.NewHandler(account.NewService(st), log).Mount(mux)
 	return mux
 }
 
