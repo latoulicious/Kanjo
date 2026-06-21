@@ -19,10 +19,11 @@ goose runs **at API boot**: migrations are embedded (`//go:embed` in
 waits up to 30s for the DB first), so a fresh DB self-migrates and a
 still-unreachable DB fails boot (see
 [ADR-0002](decisions/0002-migrations-at-boot.md)). goose is a library dependency;
-its CLI is optional for local use. sqlc is build-time only and **wired** as of the
-accounts module: `accounts.sql` → `internal/store/db/`. The `Store` embeds the
-generated `*db.Queries` (`db.New(pool)`), so modules call the generated methods
-directly; raw pgx errors are translated to `store` sentinels by `store.Classify`.
+its CLI is optional for local use. sqlc is build-time only and **wired**:
+`accounts.sql`, `categories.sql`, `projects.sql` → `internal/store/db/`. The
+`Store` embeds the generated `*db.Queries` (`db.New(pool)`), so modules call the
+generated methods directly; raw pgx errors are translated to `store` sentinels by
+`store.Classify`.
 
 ## Schema
 
