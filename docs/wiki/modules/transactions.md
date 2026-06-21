@@ -6,9 +6,9 @@ layering (**thin handler → service → store, sqlc over pgx**).
 
 Split into two passes:
 
-- **2a — single-entry CRUD** (this module): one `income`/`expense` row.
-- **2b — transfers** (later): two grouped `transfer` legs + optional fee row in
-  one tx, out==in invariant. Introduces `Store.WithTx`.
+- **2a — single-entry CRUD**: one `income`/`expense` row.
+- **2b — transfers**: two grouped `transfer` legs + optional fee row in one tx,
+  out==in invariant. Introduces `Store.WithTx`. (See [Transfers](#transfers).)
 
 ## Layers
 
@@ -97,3 +97,58 @@ managed as a group by 2b.
 relationship. This is **F-005's real fix**: a bad insert FK pre-validates to a
 **400**, never the parent-delete `ErrInUse` 409. `store.Classify` is untouched —
 the blast radius stays inside this module (see `resolutions.md` R-005).
+
+## Transfers
+
+A transfer is a **group** of rows sharing one `transfer_group_id` (a v4 UUID the
+app generates), written in **one transaction** via `Store.WithTx`:
+
+| Row | account | direction | is_inflow | amount |
+|---|---|---|---|---|
+| out leg | `from_account_id` | transfer | false | `amount` |
+| in leg | `to_account_id` | transfer | true | `amount` |
+| fee (optional) | `from_account_id` | expense | false | `fee` |
+
+Both legs carry the **same** `amount`, so out==in holds by construction (the
+invariant is the app's, not a DB CHECK — a row can't see its siblings). The fee
+is a separate `expense` charged to the source. All rows share `occurred_on`,
+`description`, and `tags`. `category_id`/`project_id` are unset on the legs; the
+fee carries `fee_category_id` when given.
+
+### Routes (`/api/v1`)
+
+| Method | Path | Success | Body |
+|---|---|---|---|
+| POST | `/transfers` | 201 `TransferResult` | `TransferInput` |
+| GET | `/transfers/{group_id}` | 200 `TransferResult` | — |
+| DELETE | `/transfers/{group_id}` | 204 | — |
+
+`DELETE` removes the whole group in one statement. It is the **only** way to
+delete a transfer: single-entry `DELETE /transactions/{id}` is scoped to
+`transfer_group_id IS NULL`, so a leg returns 404 there. Transfers are
+**immutable** — no `PUT`; edit = delete + recreate. `{group_id}` is a UUID
+(bad → 400).
+
+### Shapes
+
+```jsonc
+// TransferInput  (fee, fee_category_id, tags optional)
+{ "occurred_on":"2026-06-15", "description":"to emergency",
+  "from_account_id":1, "to_account_id":2, "amount":"500000",
+  "fee":"6500", "fee_category_id":3, "tags":["wire"] }
+
+// TransferResult
+{ "transfer_group_id":"uuid", "transactions":[ /* the 2–3 rows as Transaction */ ] }
+```
+
+`amount`/`fee` follow the single-entry money rules (positive decimal string).
+Omitting `fee` (or sending `""`/`null`) writes no fee row.
+
+### Validation & errors
+
+- `from_account_id`/`to_account_id`: required, must exist, **distinct** (→ 400,
+  with `from_account`/`to_account`-specific messages).
+- `amount` (and `fee` when present): positive decimal, NUMERIC(18,2) (→ 400).
+- `fee_category_id`: optional; must exist if present (→ 400). All FKs
+  pre-validated (same discipline as single entries; no 409).
+- group not found (GET/DELETE) → **404** `transfer not found`; bad UUID → 400.

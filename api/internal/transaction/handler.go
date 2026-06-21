@@ -26,6 +26,10 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/transactions/{id}", h.get)
 	mux.HandleFunc("PUT /api/v1/transactions/{id}", h.update)
 	mux.HandleFunc("DELETE /api/v1/transactions/{id}", h.delete)
+
+	mux.HandleFunc("POST /api/v1/transfers", h.createTransfer)
+	mux.HandleFunc("GET /api/v1/transfers/{group_id}", h.getTransfer)
+	mux.HandleFunc("DELETE /api/v1/transfers/{group_id}", h.deleteTransfer)
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +145,9 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		errors.Is(err, ErrDescTooLong), errors.Is(err, ErrAccountRequired),
 		errors.Is(err, ErrAmountRequired), errors.Is(err, ErrAmountInvalid),
 		errors.Is(err, ErrAccountNotFound), errors.Is(err, ErrCategoryNotFound),
-		errors.Is(err, ErrProjectNotFound):
+		errors.Is(err, ErrProjectNotFound), errors.Is(err, ErrFromAccountRequired),
+		errors.Is(err, ErrToAccountRequired), errors.Is(err, ErrSameAccount),
+		errors.Is(err, ErrFromAccountNotFound), errors.Is(err, ErrToAccountNotFound):
 		httpx.WriteErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		httpx.WriteErr(w, http.StatusNotFound, "transaction not found")

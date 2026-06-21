@@ -11,6 +11,60 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createGroupedTransaction = `-- name: CreateGroupedTransaction :one
+INSERT INTO transactions (occurred_on, description, direction, is_inflow, amount,
+                          account_id, category_id, project_id, transfer_group_id, tags)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, occurred_on, description, direction, is_inflow, amount, account_id,
+          category_id, project_id, transfer_group_id, tags, created_at
+`
+
+type CreateGroupedTransactionParams struct {
+	OccurredOn      pgtype.Date    `json:"occurred_on"`
+	Description     string         `json:"description"`
+	Direction       string         `json:"direction"`
+	IsInflow        bool           `json:"is_inflow"`
+	Amount          pgtype.Numeric `json:"amount"`
+	AccountID       int64          `json:"account_id"`
+	CategoryID      pgtype.Int8    `json:"category_id"`
+	ProjectID       pgtype.Int8    `json:"project_id"`
+	TransferGroupID pgtype.UUID    `json:"transfer_group_id"`
+	Tags            []string       `json:"tags"`
+}
+
+// Insert a transfer leg or fee row carrying a transfer_group_id (the grouped
+// counterpart of CreateTransaction, which always leaves the group NULL).
+func (q *Queries) CreateGroupedTransaction(ctx context.Context, arg CreateGroupedTransactionParams) (Transaction, error) {
+	row := q.db.QueryRow(ctx, createGroupedTransaction,
+		arg.OccurredOn,
+		arg.Description,
+		arg.Direction,
+		arg.IsInflow,
+		arg.Amount,
+		arg.AccountID,
+		arg.CategoryID,
+		arg.ProjectID,
+		arg.TransferGroupID,
+		arg.Tags,
+	)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.OccurredOn,
+		&i.Description,
+		&i.Direction,
+		&i.IsInflow,
+		&i.Amount,
+		&i.AccountID,
+		&i.CategoryID,
+		&i.ProjectID,
+		&i.TransferGroupID,
+		&i.Tags,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createTransaction = `-- name: CreateTransaction :one
 INSERT INTO transactions (occurred_on, description, direction, is_inflow, amount,
                           account_id, category_id, project_id, tags)
@@ -73,6 +127,18 @@ func (q *Queries) DeleteTransaction(ctx context.Context, id int64) (int64, error
 	return result.RowsAffected(), nil
 }
 
+const deleteTransferGroup = `-- name: DeleteTransferGroup :execrows
+DELETE FROM transactions WHERE transfer_group_id = $1
+`
+
+func (q *Queries) DeleteTransferGroup(ctx context.Context, transferGroupID pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTransferGroup, transferGroupID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getTransaction = `-- name: GetTransaction :one
 SELECT id, occurred_on, description, direction, is_inflow, amount, account_id,
        category_id, project_id, transfer_group_id, tags, created_at
@@ -97,6 +163,45 @@ func (q *Queries) GetTransaction(ctx context.Context, id int64) (Transaction, er
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getTransferGroup = `-- name: GetTransferGroup :many
+SELECT id, occurred_on, description, direction, is_inflow, amount, account_id,
+       category_id, project_id, transfer_group_id, tags, created_at
+FROM transactions WHERE transfer_group_id = $1 ORDER BY id
+`
+
+func (q *Queries) GetTransferGroup(ctx context.Context, transferGroupID pgtype.UUID) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransferGroup, transferGroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.OccurredOn,
+			&i.Description,
+			&i.Direction,
+			&i.IsInflow,
+			&i.Amount,
+			&i.AccountID,
+			&i.CategoryID,
+			&i.ProjectID,
+			&i.TransferGroupID,
+			&i.Tags,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTransactions = `-- name: ListTransactions :many

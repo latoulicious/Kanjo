@@ -71,3 +71,11 @@ Format per finding:
 - location: api/cmd/api/main.go:19
 - problem: `shutdownTimeout` is 10s while `WriteTimeout` is 30s, so a graceful shutdown can cut off an in-flight response that the write deadline would still permit. Cosmetic for this API (responses are tiny JSON that drain well within 10s); pre-existing (set in P1, alongside R-002). Not in the transactions diff.
 - status: open (deferred; decided with the user — out of scope for this feature)
+
+## F-008 transfer fee row allows NULL category
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent --base-commit <2a>`, transactions 2b pass)
+- severity: low (design opinion, not a defect)
+- location: api/internal/transaction/transfer.go:validateTransfer
+- problem: review suggested `fee_category_id` should be required whenever a `fee` is provided, else the fee `expense` row is written with `category_id = NULL`. A NULL category on an expense is valid by schema (nullable, `ON DELETE SET NULL`) and by the `flow_matches_direction` CHECK, and single-entry expenses likewise allow a null category. The finding's secondary claim (verify `requireRef`/`toInt8` exist) is moot — both exist; build/vet/test are clean.
+- status: resolved (→ R-008, wontfix)

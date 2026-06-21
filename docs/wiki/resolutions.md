@@ -55,3 +55,19 @@ Format per resolution:
   23503→`ErrInUse` mapping is left untouched (still correct for delete-restrict);
   the chosen branch keeps the blast radius inside the new module. Live-verified:
   bad account/category/project FK on POST → 400. See `modules/transactions.md`.
+
+## R-008 transfer fee NULL category kept  (resolves F-008)
+- date: 2026-06-22
+- change: wontfix — no code change. A fee `expense` row with `category_id = NULL`
+  is valid by schema (the column is nullable) and by the `flow_matches_direction`
+  CHECK (expense ⇒ outflow, no category requirement), and it matches single-entry
+  expenses, which also allow a null category. Requiring `fee_category_id` whenever
+  `fee` is set would diverge from that rule and tighten a contract that was
+  deliberately optional. The review's secondary claim (verify `requireRef`/`toInt8`
+  exist) is moot — both are defined in `service.go`. Decided with the user.
+- files: —
+- verification: `go build`/`go vet`/`go test ./...` clean; live smoke — a transfer
+  with a fee and no `fee_category_id` writes a fee row with `category_id` NULL and
+  returns 201.
+- constraints honored: don't modify public contracts unless required; consistent
+  with the single-entry expense rules; no speculative validation.

@@ -34,3 +34,20 @@ RETURNING id, occurred_on, description, direction, is_inflow, amount, account_id
 
 -- name: DeleteTransaction :execrows
 DELETE FROM transactions WHERE id = $1 AND transfer_group_id IS NULL;
+
+-- name: CreateGroupedTransaction :one
+-- Insert a transfer leg or fee row carrying a transfer_group_id (the grouped
+-- counterpart of CreateTransaction, which always leaves the group NULL).
+INSERT INTO transactions (occurred_on, description, direction, is_inflow, amount,
+                          account_id, category_id, project_id, transfer_group_id, tags)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, occurred_on, description, direction, is_inflow, amount, account_id,
+          category_id, project_id, transfer_group_id, tags, created_at;
+
+-- name: GetTransferGroup :many
+SELECT id, occurred_on, description, direction, is_inflow, amount, account_id,
+       category_id, project_id, transfer_group_id, tags, created_at
+FROM transactions WHERE transfer_group_id = $1 ORDER BY id;
+
+-- name: DeleteTransferGroup :execrows
+DELETE FROM transactions WHERE transfer_group_id = $1;

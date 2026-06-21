@@ -205,9 +205,15 @@ func (s *Service) validate(ctx context.Context, in Input) (db.CreateTransactionP
 }
 
 func (s *Service) requireAccount(ctx context.Context, id int64) error {
+	return s.requireAccountErr(ctx, id, ErrAccountNotFound)
+}
+
+// requireAccountErr pre-validates an account id, returning the caller's sentinel
+// when the row is absent (transfers distinguish from-account vs to-account).
+func (s *Service) requireAccountErr(ctx context.Context, id int64, missing error) error {
 	if _, err := s.st.GetAccount(ctx, id); err != nil {
 		if errors.Is(store.Classify(err), store.ErrNotFound) {
-			return ErrAccountNotFound
+			return missing
 		}
 		return store.Classify(err)
 	}
@@ -306,9 +312,12 @@ func fromUUID(v pgtype.UUID) *string {
 	if !v.Valid {
 		return nil
 	}
-	b := v.Bytes
-	s := fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+	s := uuidString(v.Bytes)
 	return &s
+}
+
+func uuidString(b [16]byte) string {
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
 func orEmpty(t []string) []string {
