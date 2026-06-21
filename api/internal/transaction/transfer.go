@@ -19,6 +19,9 @@ var (
 	ErrSameAccount         = errors.New("from_account_id and to_account_id must differ")
 	ErrFromAccountNotFound = errors.New("from_account not found")
 	ErrToAccountNotFound   = errors.New("to_account not found")
+	// A fee is a real expense that lands in burn/category reports; require it to be
+	// categorized so transfer fees don't silently inflate "Uncategorized".
+	ErrFeeCategoryRequired = errors.New("fee_category_id is required when a fee is set")
 )
 
 // TransferInput is the create body. A transfer becomes two grouped transfer legs
@@ -144,6 +147,9 @@ func (s *Service) validateTransfer(ctx context.Context, in TransferInput) (valid
 			return v, err
 		}
 		fee = &f
+		if in.FeeCategoryID == nil {
+			return v, ErrFeeCategoryRequired
+		}
 	}
 	if err := requireRef(ctx, in.FeeCategoryID, s.st.GetCategory, ErrCategoryNotFound); err != nil {
 		return v, err

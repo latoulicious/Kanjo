@@ -77,5 +77,5 @@ Format per finding:
 - source: CodeRabbit (`review --agent --base-commit <2a>`, transactions 2b pass)
 - severity: low (design opinion, not a defect)
 - location: api/internal/transaction/transfer.go:validateTransfer
-- problem: review suggested `fee_category_id` should be required whenever a `fee` is provided, else the fee `expense` row is written with `category_id = NULL`. A NULL category on an expense is valid by schema (nullable, `ON DELETE SET NULL`) and by the `flow_matches_direction` CHECK, and single-entry expenses likewise allow a null category. The finding's secondary claim (verify `requireRef`/`toInt8` exist) is moot — both exist; build/vet/test are clean.
-- status: resolved (→ R-008, wontfix)
+- problem: review suggested `fee_category_id` should be required whenever a `fee` is provided, else the fee `expense` row is written with `category_id = NULL`. Initially declined (a null category is schema-valid and matches single-entry expenses). On review with the user: the fee is an `expense` that **does** count in monthly burn and Category Breakdown, so a null category makes every uncategorized fee silently inflate the "Uncategorized" bucket. The transfer legs themselves are `transfer` (excluded from both reports), so the fee is the only report-visible row. Re-decided as a real fix. (Secondary claim — verify `requireRef`/`toInt8` exist — was moot; both exist.)
+- status: resolved (→ R-008)

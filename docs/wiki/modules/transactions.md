@@ -142,13 +142,18 @@ delete a transfer: single-entry `DELETE /transactions/{id}` is scoped to
 ```
 
 `amount`/`fee` follow the single-entry money rules (positive decimal string).
-Omitting `fee` (or sending `""`/`null`) writes no fee row.
+Omitting `fee` (or sending `""`/`null`) writes no fee row. When a `fee` **is**
+sent, `fee_category_id` is **required** (→ 400) — the fee is a real expense that
+counts in burn/category reports, so it must be categorized rather than falling
+into "Uncategorized" (the lone divergence from single-entry expenses, which allow
+a null category).
 
 ### Validation & errors
 
 - `from_account_id`/`to_account_id`: required, must exist, **distinct** (→ 400,
   with `from_account`/`to_account`-specific messages).
 - `amount` (and `fee` when present): positive decimal, NUMERIC(18,2) (→ 400).
-- `fee_category_id`: optional; must exist if present (→ 400). All FKs
-  pre-validated (same discipline as single entries; no 409).
+- `fee_category_id`: **required when `fee` is set** (→ 400 if missing), must
+  exist (→ 400). Ignored when no fee. All FKs pre-validated (same discipline as
+  single entries; no 409).
 - group not found (GET/DELETE) → **404** `transfer not found`; bad UUID → 400.

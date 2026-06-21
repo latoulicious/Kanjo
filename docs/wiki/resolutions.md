@@ -56,18 +56,22 @@ Format per resolution:
   the chosen branch keeps the blast radius inside the new module. Live-verified:
   bad account/category/project FK on POST → 400. See `modules/transactions.md`.
 
-## R-008 transfer fee NULL category kept  (resolves F-008)
+## R-008 require fee_category_id when a fee is set  (resolves F-008)
 - date: 2026-06-22
-- change: wontfix — no code change. A fee `expense` row with `category_id = NULL`
-  is valid by schema (the column is nullable) and by the `flow_matches_direction`
-  CHECK (expense ⇒ outflow, no category requirement), and it matches single-entry
-  expenses, which also allow a null category. Requiring `fee_category_id` whenever
-  `fee` is set would diverge from that rule and tighten a contract that was
-  deliberately optional. The review's secondary claim (verify `requireRef`/`toInt8`
-  exist) is moot — both are defined in `service.go`. Decided with the user.
-- files: —
-- verification: `go build`/`go vet`/`go test ./...` clean; live smoke — a transfer
-  with a fee and no `fee_category_id` writes a fee row with `category_id` NULL and
-  returns 201.
-- constraints honored: don't modify public contracts unless required; consistent
-  with the single-entry expense rules; no speculative validation.
+- change: `validateTransfer` now rejects a transfer that carries a `fee` without a
+  `fee_category_id` (new sentinel `ErrFeeCategoryRequired` → 400; mapped in the
+  handler's 400 case). No fee ⇒ still not required. Reverses the initial wontfix
+  after the user flagged that an uncategorized fee silently inflates the
+  "Uncategorized" bucket in burn/Category Breakdown (the fee is the only
+  report-visible row of a transfer — the legs are `transfer`, excluded from both
+  reports). The lone, deliberate divergence from single-entry expenses, which
+  still allow a null category.
+- files: api/internal/transaction/transfer.go, handler.go;
+  docs/wiki/modules/transactions.md
+- verification: `go build`/`go vet`/`go test ./...` clean; live smoke — transfer
+  with `fee` and no `fee_category_id` → 400 `fee_category_id is required when a fee
+  is set`; with a valid `fee_category_id` → 201 and the fee row carries the
+  category; no-fee transfer unaffected.
+- constraints honored: smallest change (one guard + sentinel); contract change is
+  the explicit fix, decided with the user; `store.Classify` + sibling modules
+  untouched.
