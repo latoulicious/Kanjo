@@ -143,3 +143,11 @@ Format per finding:
 - location: web/src/features/accounts/AccountDialog.tsx:65
 - problem: `onSubmit` reads `account.id` inside `if (editing)`, but `editing` is a separate boolean alias so TypeScript cannot narrow the optional `account` prop through it. It compiled only because the Vite-8 scaffold left `strict` **off** in `tsconfig.app.json` (so `strictNullChecks` wasn't enforcing the access). Two defects: the unsound narrowing, and the missing strict mode that hid it.
 - status: resolved (→ R-016)
+
+## F-017 delete Cancel button enabled during pending delete
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S2) — reported "minor"
+- severity: low
+- location: web/src/features/shared/NameCrud.tsx:248
+- problem: in the delete confirm, `AlertDialogAction` (Delete) is `disabled` while the mutation is pending but `AlertDialogCancel` is not, so a user can dismiss the dialog mid-delete — minor UX inconsistency. The same harmless pattern exists in the committed S1 `AccountsPage`.
+- status: resolved (→ R-017)

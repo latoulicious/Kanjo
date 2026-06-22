@@ -176,3 +176,16 @@ Format per resolution:
 - constraints honored: smallest safe change; strict tightens the foundation
   (money-app null safety) without altering runtime behavior; no public contract
   touched.
+
+## R-017 disable delete Cancel while pending  (resolves F-017)
+- date: 2026-06-22
+- change: added `disabled={remove.isPending}` to `AlertDialogCancel` in
+  `NameCrud`, matching the Delete action so the confirm can't be dismissed mid
+  mutation. Scoped to the in-scope S2 file only; the identical nit in the committed
+  S1 `AccountsPage` was left untouched to avoid mixing a fix into an unrelated
+  feature diff (AGENTS no-mixing rule) — flagged for a future sweep. Decided with
+  the user.
+- files: web/src/features/shared/NameCrud.tsx
+- verification: `pnpm build` + `pnpm lint` green.
+- constraints honored: smallest change (one prop); no contract change; deliberately
+  did not touch committed sibling code.
