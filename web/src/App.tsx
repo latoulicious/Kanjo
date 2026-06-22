@@ -30,6 +30,7 @@ export default function App() {
               subtitle="Buckets you classify spending into."
               singular="category"
               placeholder="e.g. Housing"
+              withIcon
             />
           }
         />

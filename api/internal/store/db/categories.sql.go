@@ -10,14 +10,19 @@ import (
 )
 
 const createCategory = `-- name: CreateCategory :one
-INSERT INTO categories (name) VALUES ($1)
-RETURNING id, name, created_at
+INSERT INTO categories (name, icon) VALUES ($1, $2)
+RETURNING id, name, icon, created_at
 `
 
-func (q *Queries) CreateCategory(ctx context.Context, name string) (Category, error) {
-	row := q.db.QueryRow(ctx, createCategory, name)
+type CreateCategoryParams struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Icon)
 	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }
 
@@ -34,18 +39,18 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int64) (int64, error) {
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, name, created_at FROM categories WHERE id = $1
+SELECT id, name, icon, created_at FROM categories WHERE id = $1
 `
 
 func (q *Queries) GetCategory(ctx context.Context, id int64) (Category, error) {
 	row := q.db.QueryRow(ctx, getCategory, id)
 	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }
 
 const listCategories = `-- name: ListCategories :many
-SELECT id, name, created_at FROM categories ORDER BY name
+SELECT id, name, icon, created_at FROM categories ORDER BY name
 `
 
 func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
@@ -57,7 +62,7 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 	var items []Category
 	for rows.Next() {
 		var i Category
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -69,18 +74,19 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 }
 
 const updateCategory = `-- name: UpdateCategory :one
-UPDATE categories SET name = $2 WHERE id = $1
-RETURNING id, name, created_at
+UPDATE categories SET name = $2, icon = $3 WHERE id = $1
+RETURNING id, name, icon, created_at
 `
 
 type UpdateCategoryParams struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
-	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name)
+	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name, arg.Icon)
 	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }

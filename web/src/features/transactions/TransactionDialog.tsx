@@ -32,6 +32,7 @@ import {
 import { ApiError } from "@/lib/api"
 import { useResourceList } from "@/lib/resources"
 import type { Account, Category, Project, Transaction, TransactionInput } from "@/types"
+import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import { useCreateTransaction, useUpdateTransaction } from "./hooks"
 import { NONE, amountField, dateField, splitTags, todayStr } from "./form"
 
@@ -237,7 +238,10 @@ export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
                         <SelectItem value={NONE}>None</SelectItem>
                         {categories.data?.map((c) => (
                           <SelectItem key={c.id} value={String(c.id)}>
-                            {c.name}
+                            <span className="inline-flex items-center gap-2">
+                              <CategoryIcon name={c.icon} />
+                              {c.name}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>

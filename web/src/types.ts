@@ -16,10 +16,12 @@ export interface AccountInput {
 export interface Category {
   id: number
   name: string
+  icon: string // lucide icon name (kebab-case), "" = none
   created_at: string
 }
 export interface CategoryInput {
   name: string
+  icon: string
 }
 
 export interface Project {

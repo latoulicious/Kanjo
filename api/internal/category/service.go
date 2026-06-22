@@ -11,7 +11,10 @@ import (
 	"github.com/latoulicious/kanjo/api/internal/store/db"
 )
 
-const maxNameLen = 100
+const (
+	maxNameLen = 100
+	maxIconLen = 50 // lucide names are short kebab-case; 50 is generous headroom
+)
 
 var (
 	ErrEmptyName   = errors.New("name is required")
@@ -23,12 +26,15 @@ var (
 type Category struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
+	Icon      string    `json:"icon"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Input is the create/update body.
+// Input is the create/update body. Icon is a lucide icon name (kebab-case),
+// optional — empty means no icon.
 type Input struct {
 	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 type Service struct {
@@ -64,7 +70,10 @@ func (s *Service) Create(ctx context.Context, in Input) (Category, error) {
 	if err != nil {
 		return Category{}, err
 	}
-	r, err := s.st.CreateCategory(ctx, name)
+	r, err := s.st.CreateCategory(ctx, db.CreateCategoryParams{
+		Name: name,
+		Icon: cleanIcon(in.Icon),
+	})
 	if err != nil {
 		return Category{}, store.Classify(err)
 	}
@@ -79,6 +88,7 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Category, err
 	r, err := s.st.UpdateCategory(ctx, db.UpdateCategoryParams{
 		ID:   id,
 		Name: name,
+		Icon: cleanIcon(in.Icon),
 	})
 	if err != nil {
 		return Category{}, store.Classify(err)
@@ -101,8 +111,21 @@ func toCategory(r db.Category) Category {
 	return Category{
 		ID:        r.ID,
 		Name:      r.Name,
+		Icon:      r.Icon,
 		CreatedAt: r.CreatedAt.Time,
 	}
+}
+
+// cleanIcon trims the icon name and caps it; the frontend only ever sends names
+// from the lucide picker, so we store the string as-is without validating it
+// against the icon set (no server-side coupling to lucide).
+// ponytail: length cap only; add a name allowlist if untrusted clients appear.
+func cleanIcon(icon string) string {
+	icon = strings.TrimSpace(icon)
+	if utf8.RuneCountInString(icon) > maxIconLen {
+		return string([]rune(icon)[:maxIconLen])
+	}
+	return icon
 }
 
 func cleanName(name string) (string, error) {

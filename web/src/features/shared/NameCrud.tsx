@@ -43,13 +43,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { CategoryIcon } from "./CategoryIcon"
+import { IconPicker } from "./IconPicker"
 
-// Categories and projects are structurally identical name-only buckets, so they
-// share one manager parameterized by REST path + labels. Accounts is bespoke
-// (it carries is_liquid) and intentionally not folded in here.
+// Categories and projects are structurally identical name buckets, so they share
+// one manager parameterized by REST path + labels. Categories opt into an icon
+// picker via withIcon; projects stay name-only. Accounts is bespoke (is_liquid)
+// and intentionally not folded in here.
 interface NamedRow {
   id: number
   name: string
+  icon?: string
   created_at: string
 }
 
@@ -59,19 +63,29 @@ interface Props {
   subtitle: string
   singular: string // lowercased noun, e.g. "category"
   placeholder: string
+  withIcon?: boolean // show the lucide icon picker + render icons in the list
 }
 
-// max 100 mirrors the API name limit (category/project service.go).
+// icon rides along for every bucket; the API ignores unknown JSON fields, so
+// projects harmlessly post icon:"". max 100 mirrors the API name limit.
 const schema = z.object({
   name: z
     .string()
     .trim()
     .min(1, "Name is required")
     .max(100, "Max 100 characters"),
+  icon: z.string(),
 })
 type FormValues = z.infer<typeof schema>
 
-export function NameCrud({ path, title, subtitle, singular, placeholder }: Props) {
+export function NameCrud({
+  path,
+  title,
+  subtitle,
+  singular,
+  placeholder,
+  withIcon = false,
+}: Props) {
   const qc = useQueryClient()
   const key = [path]
   const invalidate = () => qc.invalidateQueries({ queryKey: key })
@@ -100,10 +114,11 @@ export function NameCrud({ path, title, subtitle, singular, placeholder }: Props
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", icon: "" },
   })
   useEffect(() => {
-    if (dialogOpen) form.reset({ name: editing?.name ?? "" })
+    if (dialogOpen)
+      form.reset({ name: editing?.name ?? "", icon: editing?.icon ?? "" })
   }, [dialogOpen, editing, form])
 
   async function onSubmit(values: FormValues) {
@@ -165,7 +180,17 @@ export function NameCrud({ path, title, subtitle, singular, placeholder }: Props
             {rows?.length === 0 && <RowMessage>Nothing here yet.</RowMessage>}
             {rows?.map((row) => (
               <TableRow key={row.id}>
-                <TableCell className="font-medium">{row.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="inline-flex items-center gap-2">
+                    {withIcon && (
+                      <CategoryIcon
+                        name={row.icon}
+                        className="size-4 text-muted-foreground"
+                      />
+                    )}
+                    {row.name}
+                  </span>
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(row.created_at).toLocaleDateString()}
                 </TableCell>
@@ -221,6 +246,22 @@ export function NameCrud({ path, title, subtitle, singular, placeholder }: Props
                   </FormItem>
                 )}
               />
+              {withIcon && (
+                <FormField
+                  control={form.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon</FormLabel>
+                      <IconPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <DialogFooter>
                 <Button
                   type="button"
