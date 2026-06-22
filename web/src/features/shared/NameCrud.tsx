@@ -168,7 +168,6 @@ export function NameCrud({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Created</TableHead>
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
@@ -188,9 +187,6 @@ export function NameCrud({
                     )}
                     {row.name}
                   </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(row.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
@@ -310,7 +306,7 @@ function RowMessage({ children }: { children: ReactNode }) {
   return (
     <TableRow>
       <TableCell
-        colSpan={3}
+        colSpan={2}
         className="py-8 text-center text-muted-foreground"
       >
         {children}
