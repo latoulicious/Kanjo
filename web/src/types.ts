@@ -6,6 +6,7 @@ export interface Account {
   id: number
   name: string
   is_liquid: boolean
+  balance: string // signed decimal string, from the list endpoint
   created_at: string
 }
 export interface AccountInput {

@@ -24,6 +24,7 @@ type Account struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	IsLiquid  bool      `json:"is_liquid"`
+	Balance   string    `json:"balance"` // signed decimal string; only List computes it
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -49,7 +50,13 @@ func (s *Service) List(ctx context.Context) ([]Account, error) {
 	}
 	out := make([]Account, len(rows))
 	for i, r := range rows {
-		out[i] = toAccount(r)
+		out[i] = Account{
+			ID:        r.ID,
+			Name:      r.Name,
+			IsLiquid:  r.IsLiquid,
+			Balance:   r.Balance,
+			CreatedAt: r.CreatedAt.Time,
+		}
 	}
 	return out, nil
 }
@@ -104,11 +111,14 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// toAccount maps the single-row endpoints (get/create/update). Balance is "0.00":
+// a fresh account has none, and the UI reads live balances from List, then refetches.
 func toAccount(r db.Account) Account {
 	return Account{
 		ID:        r.ID,
 		Name:      r.Name,
 		IsLiquid:  r.IsLiquid,
+		Balance:   "0.00",
 		CreatedAt: r.CreatedAt.Time,
 	}
 }
