@@ -58,7 +58,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -70,7 +70,7 @@ export function ReportsPage() {
           <Control label="From">
             <Input
               type="date"
-              className="w-40"
+              className="w-full sm:w-40"
               value={range.from ?? ""}
               onChange={(e) =>
                 setRange((r) => ({ ...r, from: e.target.value || undefined }))
@@ -80,7 +80,7 @@ export function ReportsPage() {
           <Control label="To">
             <Input
               type="date"
-              className="w-40"
+              className="w-full sm:w-40"
               value={range.to ?? ""}
               onChange={(e) =>
                 setRange((r) => ({ ...r, to: e.target.value || undefined }))
@@ -92,7 +92,7 @@ export function ReportsPage() {
               value={interval}
               onValueChange={(v) => setInterval(v as ReportInterval)}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -153,7 +153,7 @@ export function ReportsPage() {
 
 function Control({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <label className="flex w-full flex-col gap-1 text-xs text-muted-foreground sm:w-auto">
       {label}
       {children}
     </label>
