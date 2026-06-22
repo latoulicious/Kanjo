@@ -95,7 +95,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 // ErrInUse case: category deletes are ON DELETE SET NULL, never restricted.
 func (h *Handler) fail(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, ErrEmptyName), errors.Is(err, ErrNameTooLong):
+	case errors.Is(err, ErrEmptyName), errors.Is(err, ErrNameTooLong), errors.Is(err, ErrBadBudget):
 		httpx.WriteErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		httpx.WriteErr(w, http.StatusNotFound, "category not found")

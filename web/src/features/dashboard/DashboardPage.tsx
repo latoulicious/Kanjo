@@ -25,8 +25,9 @@ import { formatAmount, toNumber } from "@/lib/money"
 import { cn } from "@/lib/utils"
 import type { Account, Category } from "@/types"
 import { CategoryIcon } from "@/features/shared/CategoryIcon"
-import { useSummary } from "@/features/reports/hooks"
+import { useSummary, useCategoryReport } from "@/features/reports/hooks"
 import { useTransactions } from "@/features/transactions/hooks"
+import { isoDate, cycleStart } from "@/lib/cycle"
 
 // Dashboard reuses the report summary + ledger list (both server-derived);
 // useTransactions({}) shares its cache key with the ledger's unfiltered view.
@@ -37,6 +38,21 @@ export function DashboardPage() {
   const { data: txs, isLoading, isError } = useTransactions({})
   const accounts = useResourceList<Account>("accounts")
   const categories = useResourceList<Category>("categories")
+  // Budget status compares each budgeted category against this pay cycle's spend.
+  const cycleSpend = useCategoryReport({ from: isoDate(cycleStart()) })
+
+  const budgets = useMemo(() => {
+    const spentById = new Map(
+      (cycleSpend.data ?? []).map((c) => [c.category_id, toNumber(c.total)]),
+    )
+    return (categories.data ?? [])
+      .filter((c) => c.monthly_budget != null && c.monthly_budget !== "")
+      .map((c) => {
+        const limit = toNumber(c.monthly_budget as string)
+        const spent = spentById.get(c.id) ?? 0
+        return { id: c.id, name: c.name, icon: c.icon, limit, spent }
+      })
+  }, [categories.data, cycleSpend.data])
 
   const accountName = useMemo(
     () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
@@ -82,6 +98,54 @@ export function DashboardPage() {
         <Metric label="Savings Rate" value={savingsRate} />
         <Metric label="Runway" value={runway} />
       </div>
+
+      {budgets.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif">Budgets</CardTitle>
+            <CardDescription>This pay cycle · spend vs limit.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {budgets.map((b) => {
+              const over = b.spent - b.limit
+              const pct = b.limit > 0 ? Math.min((b.spent / b.limit) * 100, 100) : 0
+              return (
+                <div key={b.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center gap-2 font-medium">
+                      <CategoryIcon name={b.icon} />
+                      {b.name}
+                    </span>
+                    <span className="font-mono tabular-nums text-muted-foreground">
+                      {formatAmount(String(b.spent))} / {formatAmount(String(b.limit))}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        over > 0 ? "bg-negative" : "bg-primary",
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-xs">
+                    {over > 0 ? (
+                      <span className="text-negative">
+                        Over by {formatAmount(String(over))}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {formatAmount(String(b.limit - b.spent))} left
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

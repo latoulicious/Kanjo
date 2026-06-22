@@ -7,22 +7,35 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createCategory = `-- name: CreateCategory :one
-INSERT INTO categories (name, icon) VALUES ($1, $2)
-RETURNING id, name, icon, created_at
+INSERT INTO categories (name, icon, monthly_budget) VALUES ($1, $2, $3)
+RETURNING id, name, icon, monthly_budget::text AS monthly_budget, created_at
 `
 
 type CreateCategoryParams struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"`
+	Name          string         `json:"name"`
+	Icon          string         `json:"icon"`
+	MonthlyBudget pgtype.Numeric `json:"monthly_budget"`
 }
 
-func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
-	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Icon)
-	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
+// CategoryRow is the read projection: monthly_budget is cast to text so it
+// arrives as a nullable decimal string (pgtype.Text), not pgtype.Numeric.
+type CategoryRow struct {
+	ID            int64              `json:"id"`
+	Name          string             `json:"name"`
+	Icon          string             `json:"icon"`
+	MonthlyBudget pgtype.Text        `json:"monthly_budget"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CategoryRow, error) {
+	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Icon, arg.MonthlyBudget)
+	var i CategoryRow
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.MonthlyBudget, &i.CreatedAt)
 	return i, err
 }
 
@@ -39,30 +52,30 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int64) (int64, error) {
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, name, icon, created_at FROM categories WHERE id = $1
+SELECT id, name, icon, monthly_budget::text AS monthly_budget, created_at FROM categories WHERE id = $1
 `
 
-func (q *Queries) GetCategory(ctx context.Context, id int64) (Category, error) {
+func (q *Queries) GetCategory(ctx context.Context, id int64) (CategoryRow, error) {
 	row := q.db.QueryRow(ctx, getCategory, id)
-	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
+	var i CategoryRow
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.MonthlyBudget, &i.CreatedAt)
 	return i, err
 }
 
 const listCategories = `-- name: ListCategories :many
-SELECT id, name, icon, created_at FROM categories ORDER BY name
+SELECT id, name, icon, monthly_budget::text AS monthly_budget, created_at FROM categories ORDER BY name
 `
 
-func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
+func (q *Queries) ListCategories(ctx context.Context) ([]CategoryRow, error) {
 	rows, err := q.db.Query(ctx, listCategories)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Category
+	var items []CategoryRow
 	for rows.Next() {
-		var i Category
-		if err := rows.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt); err != nil {
+		var i CategoryRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Icon, &i.MonthlyBudget, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -74,19 +87,20 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 }
 
 const updateCategory = `-- name: UpdateCategory :one
-UPDATE categories SET name = $2, icon = $3 WHERE id = $1
-RETURNING id, name, icon, created_at
+UPDATE categories SET name = $2, icon = $3, monthly_budget = $4 WHERE id = $1
+RETURNING id, name, icon, monthly_budget::text AS monthly_budget, created_at
 `
 
 type UpdateCategoryParams struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-	Icon string `json:"icon"`
+	ID            int64          `json:"id"`
+	Name          string         `json:"name"`
+	Icon          string         `json:"icon"`
+	MonthlyBudget pgtype.Numeric `json:"monthly_budget"`
 }
 
-func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
-	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name, arg.Icon)
-	var i Category
-	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (CategoryRow, error) {
+	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name, arg.Icon, arg.MonthlyBudget)
+	var i CategoryRow
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.MonthlyBudget, &i.CreatedAt)
 	return i, err
 }

@@ -31,6 +31,7 @@ export default function App() {
               singular="category"
               placeholder="e.g. Housing"
               withIcon
+              withBudget
             />
           }
         />

@@ -18,11 +18,13 @@ export interface Category {
   id: number
   name: string
   icon: string // lucide icon name (kebab-case), "" = none
+  monthly_budget: string | null // per-cycle limit, null = no budget
   created_at: string
 }
 export interface CategoryInput {
   name: string
   icon: string
+  monthly_budget?: string | null
 }
 
 export interface Project {
