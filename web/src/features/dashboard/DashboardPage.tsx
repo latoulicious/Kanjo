@@ -24,6 +24,7 @@ import { useResourceList } from "@/lib/resources"
 import { formatAmount, toNumber } from "@/lib/money"
 import { cn } from "@/lib/utils"
 import type { Account, Category } from "@/types"
+import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import { useSummary } from "@/features/reports/hooks"
 import { useTransactions } from "@/features/transactions/hooks"
 
@@ -41,8 +42,8 @@ export function DashboardPage() {
     () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
     [accounts.data],
   )
-  const categoryName = useMemo(
-    () => new Map((categories.data ?? []).map((c) => [c.id, c.name])),
+  const categoryById = useMemo(
+    () => new Map((categories.data ?? []).map((c) => [c.id, c])),
     [categories.data],
   )
 
@@ -143,9 +144,17 @@ export function DashboardPage() {
                     {accountName.get(tx.account_id) ?? `#${tx.account_id}`}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {tx.category_id != null
-                      ? (categoryName.get(tx.category_id) ?? `#${tx.category_id}`)
-                      : "—"}
+                    {tx.category_id != null ? (
+                      <span className="inline-flex items-center gap-2">
+                        <CategoryIcon
+                          name={categoryById.get(tx.category_id)?.icon}
+                        />
+                        {categoryById.get(tx.category_id)?.name ??
+                          `#${tx.category_id}`}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
