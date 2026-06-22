@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { api, ApiError } from "@/lib/api"
+import { formatAmount } from "@/lib/money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -161,6 +162,8 @@ export function NameCrud({
     }
   }
 
+  const cols = withBudget ? 3 : 2 // Name + [Budget] + actions
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -183,13 +186,16 @@ export function NameCrud({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              {withBudget && <TableHead className="text-right">Budget</TableHead>}
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <RowMessage>Loading…</RowMessage>}
-            {isError && <RowMessage>Failed to load.</RowMessage>}
-            {rows?.length === 0 && <RowMessage>Nothing here yet.</RowMessage>}
+            {isLoading && <RowMessage cols={cols}>Loading…</RowMessage>}
+            {isError && <RowMessage cols={cols}>Failed to load.</RowMessage>}
+            {rows?.length === 0 && (
+              <RowMessage cols={cols}>Nothing here yet.</RowMessage>
+            )}
             {rows?.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">
@@ -203,6 +209,11 @@ export function NameCrud({
                     {row.name}
                   </span>
                 </TableCell>
+                {withBudget && (
+                  <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                    {row.monthly_budget ? formatAmount(row.monthly_budget) : "—"}
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <Button
@@ -340,11 +351,11 @@ export function NameCrud({
   )
 }
 
-function RowMessage({ children }: { children: ReactNode }) {
+function RowMessage({ cols, children }: { cols: number; children: ReactNode }) {
   return (
     <TableRow>
       <TableCell
-        colSpan={2}
+        colSpan={cols}
         className="py-8 text-center text-muted-foreground"
       >
         {children}
