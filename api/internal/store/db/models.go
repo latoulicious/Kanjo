@@ -18,6 +18,7 @@ type Account struct {
 type Category struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 

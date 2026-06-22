@@ -34,6 +34,7 @@ import { ApiError } from "@/lib/api"
 import { useResourceList } from "@/lib/resources"
 import { formatAmount } from "@/lib/money"
 import { cn } from "@/lib/utils"
+import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import type {
   Account,
   Category,
@@ -62,8 +63,8 @@ export function LedgerPage() {
     () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
     [accounts.data],
   )
-  const categoryName = useMemo(
-    () => new Map((categories.data ?? []).map((c) => [c.id, c.name])),
+  const categoryById = useMemo(
+    () => new Map((categories.data ?? []).map((c) => [c.id, c])),
     [categories.data],
   )
   const projectName = useMemo(
@@ -228,9 +229,17 @@ export function LedgerPage() {
                     {accountName.get(tx.account_id) ?? `#${tx.account_id}`}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {tx.category_id != null
-                      ? (categoryName.get(tx.category_id) ?? `#${tx.category_id}`)
-                      : "—"}
+                    {tx.category_id != null ? (
+                      <span className="inline-flex items-center gap-2">
+                        <CategoryIcon
+                          name={categoryById.get(tx.category_id)?.icon}
+                        />
+                        {categoryById.get(tx.category_id)?.name ??
+                          `#${tx.category_id}`}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
                     {tx.project_id != null
