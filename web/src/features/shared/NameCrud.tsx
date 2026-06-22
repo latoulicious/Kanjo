@@ -46,10 +46,8 @@ import {
 import { CategoryIcon } from "./CategoryIcon"
 import { IconPicker } from "./IconPicker"
 
-// Categories and projects are structurally identical name buckets, so they share
-// one manager parameterized by REST path + labels. Categories opt into an icon
-// picker via withIcon; projects stay name-only. Accounts is bespoke (is_liquid)
-// and intentionally not folded in here.
+// Categories and projects are identical name buckets sharing one manager;
+// categories opt into the icon picker via withIcon. Accounts stays bespoke (is_liquid).
 interface NamedRow {
   id: number
   name: string

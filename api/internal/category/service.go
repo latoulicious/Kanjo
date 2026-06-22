@@ -116,9 +116,8 @@ func toCategory(r db.Category) Category {
 	}
 }
 
-// cleanIcon trims the icon name and caps it; the frontend only ever sends names
-// from the lucide picker, so we store the string as-is without validating it
-// against the icon set (no server-side coupling to lucide).
+// Stored as-is: the picker only sends valid lucide names, so no server-side
+// validation against the icon set.
 // ponytail: length cap only; add a name allowlist if untrusted clients appear.
 func cleanIcon(icon string) string {
 	icon = strings.TrimSpace(icon)
