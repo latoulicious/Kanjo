@@ -87,8 +87,8 @@ export function AccountsPage() {
               <TableRow key={account.id}>
                 <TableCell className="font-medium">{account.name}</TableCell>
                 <TableCell>
-                  <Badge variant={account.is_liquid ? "default" : "secondary"}>
-                    {account.is_liquid ? "Liquid" : "Illiquid"}
+                  <Badge variant={account.is_liquid ? "default" : "outline"}>
+                    {account.is_liquid ? "Liquid" : "Reserve"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
