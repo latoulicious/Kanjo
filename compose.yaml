@@ -1,0 +1,33 @@
+name: kanjo
+
+# Two containers (ADR-0001): web + api. Postgres is the external shared instance
+# (`shared-postgres` on the external `shared-db` network), not bundled here.
+services:
+  api:
+    build:
+      context: ./api
+    env_file: .env
+    environment:
+      PORT: "3000"
+    networks:
+      - internal
+      - shared-db
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+    depends_on:
+      - api
+    ports:
+      # Loopback-only: the Cloudflare Tunnel is the sole public path in.
+      - "127.0.0.1:8090:8090"
+    networks:
+      - internal
+    restart: unless-stopped
+
+networks:
+  internal:
+    driver: bridge
+  shared-db:
+    external: true
