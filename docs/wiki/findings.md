@@ -151,3 +151,19 @@ Format per finding:
 - location: web/src/features/shared/NameCrud.tsx:248
 - problem: in the delete confirm, `AlertDialogAction` (Delete) is `disabled` while the mutation is pending but `AlertDialogCancel` is not, so a user can dismiss the dialog mid-delete — minor UX inconsistency. The same harmless pattern exists in the committed S1 `AccountsPage`.
 - status: resolved (→ R-017)
+
+## F-018 Textarea lacks React.forwardRef
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S3) — reported "major"
+- severity: low (false positive under React 19)
+- location: web/src/components/ui/textarea.tsx:5
+- problem: review claimed the textarea must use `React.forwardRef` for form libs to attach refs. Stale for React 19: function components receive `ref` as an ordinary prop, and the component spreads `...props` (which carries `ref`) onto the `<textarea>`. The sibling `ui/input.tsx` is the identical forwardRef-less pattern and drives every form field across S1–S3 — all creates/edits passed live smokes. Vendored shadcn React-19 output.
+- status: resolved (→ R-018, wontfix)
+
+## F-019 textarea field-sizing-content lacks Firefox support
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S3) — reported "minor"
+- severity: low (vendored; cosmetic)
+- location: web/src/components/ui/textarea.tsx:10
+- problem: the `field-sizing-content` utility (auto-grow) isn't supported in older Firefox; those users get fixed sizing. Pure progressive enhancement — `min-h-16` gives a sane fallback, and forms set `rows`. Vendored shadcn class; not worth diverging the copied-in file.
+- status: resolved (→ R-019, wontfix)

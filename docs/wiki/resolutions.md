@@ -189,3 +189,27 @@ Format per resolution:
 - verification: `pnpm build` + `pnpm lint` green.
 - constraints honored: smallest change (one prop); no contract change; deliberately
   did not touch committed sibling code.
+
+## R-018 Textarea forwardRef finding declined  (resolves F-018)
+- date: 2026-06-22
+- change: wontfix — no code change. Under React 19 `ref` is a normal prop; the
+  vendored textarea spreads `...props` (incl. `ref`) onto the element, and the
+  identical forwardRef-less `ui/input.tsx` powers every form field that passed the
+  S1–S3 live smokes. Adding `forwardRef` would diverge the vendored file from
+  shadcn's React-19 output (and from `input.tsx`) for no functional gain. Decided
+  with the user.
+- files: —
+- verification: `pnpm build`/`pnpm lint` green; forms submit (description field
+  uses this textarea) in the S3 smoke.
+- constraints honored: no patching of vendored upstream code; consistent with
+  R-013/R-015.
+
+## R-019 textarea field-sizing finding declined  (resolves F-019)
+- date: 2026-06-22
+- change: wontfix — no code change. `field-sizing-content` is progressive
+  enhancement; the `min-h-16` class and form `rows` give a sane fixed fallback
+  where unsupported. Vendored shadcn utility; editing it is inconsistent churn on
+  copied-in code. Decided with the user.
+- files: —
+- verification: textarea renders and accepts input regardless of auto-grow support.
+- constraints honored: no selective churn on vendored primitives.

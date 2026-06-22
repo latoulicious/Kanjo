@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { Layout } from "@/components/Layout"
 import { Placeholder } from "@/components/Placeholder"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
+import { LedgerPage } from "@/features/transactions/LedgerPage"
 import { NameCrud } from "@/features/shared/NameCrud"
 
 // Feature pages land slice by slice; routes render placeholders until then.
@@ -10,7 +11,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Placeholder title="Dashboard" />} />
-        <Route path="ledger" element={<Placeholder title="Ledger" />} />
+        <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route
           path="categories"
