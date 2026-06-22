@@ -175,3 +175,19 @@ Format per finding:
 - location: web/src/components/ui/chart.tsx:223
 - problem: review claimed `border-(--color-border)` / `bg-(--color-bg)` are invalid Tailwind and styles won't apply. False positive: `(--var)` is **Tailwind v4's CSS-variable shorthand** (we run tailwindcss ^4.3); v3 rules don't apply. Proven — the built CSS contains `background-color:var(--color-bg)`. Vendored shadcn-for-v4 tooltip indicator.
 - status: resolved (→ R-020, wontfix)
+
+## F-021 nginx serves no security response headers
+- date: 2026-06-22
+- source: CodeRabbit (`review --plain -t uncommitted`, deploy phase) — reported "major"
+- severity: low (defense-in-depth; app is also edge-gated by Cloudflare Access)
+- location: web/nginx.conf:1-11
+- problem: the SPA edge sets no `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy`, leaving it open to clickjacking and MIME-sniffing on the client side.
+- status: resolved (→ R-021, fixed)
+
+## F-022 nginx /api proxy has no timeouts
+- date: 2026-06-22
+- source: CodeRabbit (`review --plain -t uncommitted`, deploy phase) — reported "major"
+- severity: medium (availability)
+- location: web/nginx.conf:15-21
+- problem: the `/api/` proxy uses nginx defaults (~60s). A slow or hung API would block nginx workers, risking worker exhaustion under load.
+- status: resolved (→ R-022, fixed)

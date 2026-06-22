@@ -226,3 +226,29 @@ Format per resolution:
 - verification: `grep` of `dist/assets/*.css` shows the compiled
   `background-color:var(--color-bg)` rule; `pnpm build` green.
 - constraints honored: no patching of valid vendored code; consistent with R-012.
+
+## R-021 add nginx security headers  (resolves F-021)
+- date: 2026-06-22
+- change: added `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin` (all `always`) at server level
+  in `web/nginx.conf`. Declined CodeRabbit's `X-XSS-Protection` (deprecated; modern
+  browsers ignore it, guidance is to omit or send `0`) and its CSP suggestion
+  (a strict CSP needs testing against Recharts/Radix inline styles — deferred to a
+  dedicated hardening pass, not blind-added here).
+- files: web/nginx.conf
+- verification: `nginx -t` clean in the built image (re-review below); headers are
+  static directives.
+- constraints honored: smallest safe change; deferred the CSP rather than risk
+  breaking the SPA.
+
+## R-022 add nginx /api proxy timeouts  (resolves F-022)
+- date: 2026-06-22
+- change: added `proxy_connect_timeout 5s`, `proxy_send_timeout 30s`,
+  `proxy_read_timeout 30s` to the `/api/` location in `web/nginx.conf` — matches the
+  API's own 30s read/write `http.Server` timeouts so the edge fails fast instead of
+  parking workers for 60s.
+- files: web/nginx.conf
+- verification: clean CodeRabbit re-review (below); validated by `docker compose`
+  smoke (web nginx starts, `/api/v1/accounts` proxied 200).
+- constraints honored: timeouts aligned to the existing server-side budget, no new
+  behavior.
