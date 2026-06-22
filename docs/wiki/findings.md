@@ -79,3 +79,19 @@ Format per finding:
 - location: api/internal/transaction/transfer.go:validateTransfer
 - problem: review suggested `fee_category_id` should be required whenever a `fee` is provided, else the fee `expense` row is written with `category_id = NULL`. Initially declined (a null category is schema-valid and matches single-entry expenses). On review with the user: the fee is an `expense` that **does** count in monthly burn and Category Breakdown, so a null category makes every uncategorized fee silently inflate the "Uncategorized" bucket. The transfer legs themselves are `transfer` (excluded from both reports), so the fee is the only report-visible row. Re-decided as a real fix. (Secondary claim — verify `requireRef`/`toInt8` exist — was moot; both exist.)
 - status: resolved (→ R-008)
+
+## F-009 router transaction mount flagged as missing module
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, reports phase) — reported "critical"
+- severity: low (false positive)
+- location: api/internal/server/router.go:24
+- problem: review claimed `transaction.NewHandler(...).Mount(mux)` references a non-existent module and would fail to compile, advising the line be deleted. Artifact of the uncommitted-only scope: the `transaction` package is committed (2a `9632cac`, 2b `f9efaa8`, fee-fix `4305a5a`) but absent from the uncommitted diff CodeRabbit saw, so it assumed the nearby line I edited was dangling. The module exists and the tree compiles. Re-running `--base main` (which includes the committed module) the finding disappears.
+- status: resolved (→ R-009, wontfix)
+
+## F-010 transfer test ignores newGroupID error
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent --base main`, reports phase) — reported "minor"
+- severity: low
+- location: api/internal/transaction/transfer_test.go:53
+- problem: `TestTransferRowsWithFee` does `group, _ := newGroupID()`, discarding the error, while `TestTransferRowsNoFee` checks it. A consistency nit: if `newGroupID` ever failed, the with-fee test would proceed on a zero UUID and fail confusingly downstream. Pre-existing (transactions 2b, committed `f9efaa8`); not part of the reports diff. Surfaced only because `--base main` widened scope to the whole branch.
+- status: resolved (→ R-010, wontfix)

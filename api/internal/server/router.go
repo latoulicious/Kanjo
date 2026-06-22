@@ -8,6 +8,7 @@ import (
 	"github.com/latoulicious/kanjo/api/internal/category"
 	"github.com/latoulicious/kanjo/api/internal/httpx"
 	"github.com/latoulicious/kanjo/api/internal/project"
+	"github.com/latoulicious/kanjo/api/internal/report"
 	"github.com/latoulicious/kanjo/api/internal/store"
 	"github.com/latoulicious/kanjo/api/internal/transaction"
 )
@@ -21,6 +22,7 @@ func NewMux(st *store.Store, log *slog.Logger) http.Handler {
 	category.NewHandler(category.NewService(st), log).Mount(mux)
 	project.NewHandler(project.NewService(st), log).Mount(mux)
 	transaction.NewHandler(transaction.NewService(st), log).Mount(mux)
+	report.NewHandler(report.NewService(st), log).Mount(mux)
 	return mux
 }
 

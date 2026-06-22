@@ -75,3 +75,30 @@ Format per resolution:
 - constraints honored: smallest change (one guard + sentinel); contract change is
   the explicit fix, decided with the user; `store.Classify` + sibling modules
   untouched.
+
+## R-009 router missing-module finding declined  (resolves F-009)
+- date: 2026-06-22
+- change: wontfix — no code change. Confirmed false positive: the `transaction`
+  module is committed and the tree builds. The flag came from CodeRabbit's
+  uncommitted-only scope not seeing the committed package; a `--base main` re-run
+  (which includes it) produced the finding no more. Deleting the mount line as
+  advised would break a working, live-tested route group. Decided with the user.
+- files: —
+- verification: `go build ./...` and `go test ./...` clean this session; reports
+  live smoke green; `coderabbit review --agent --base main` — F-009 absent.
+- constraints honored: don't modify unless required; no public contract change; no
+  unrelated churn.
+
+## R-010 transfer-test error check declined  (resolves F-010)
+- date: 2026-06-22
+- change: wontfix — no code change. The ignored `newGroupID()` error is a test-only
+  consistency nit in already-committed transactions 2b code, outside the reports
+  diff. AGENTS forbids mixing unrelated cleanup into a feature diff, so it is not
+  fixed here; left wontfix rather than deferred-open because the risk is negligible
+  (`newGroupID` reads `crypto/rand`, effectively never fails in test). Decided with
+  the user. May be tidied in a future scoped transactions-test pass.
+- files: —
+- verification: `go test ./...` clean (test passes today regardless); finding is
+  test-quality only, no runtime impact.
+- constraints honored: no unrelated cleanup in the feature diff; smallest safe
+  action; sibling modules untouched.
