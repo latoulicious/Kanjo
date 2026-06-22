@@ -251,6 +251,7 @@ export function TransferDialog({ open, onOpenChange }: Props) {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>Required when a fee is set.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

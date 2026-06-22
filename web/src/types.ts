@@ -6,6 +6,7 @@ export interface Account {
   id: number
   name: string
   is_liquid: boolean
+  balance: string // signed decimal string, from the list endpoint
   created_at: string
 }
 export interface AccountInput {
@@ -17,11 +18,13 @@ export interface Category {
   id: number
   name: string
   icon: string // lucide icon name (kebab-case), "" = none
+  monthly_budget: string | null // per-cycle limit, null = no budget
   created_at: string
 }
 export interface CategoryInput {
   name: string
   icon: string
+  monthly_budget?: string | null
 }
 
 export interface Project {

@@ -3,38 +3,45 @@ package category
 import (
 	"context"
 	"errors"
+	"math/big"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/latoulicious/kanjo/api/internal/store"
 	"github.com/latoulicious/kanjo/api/internal/store/db"
 )
 
 const (
-	maxNameLen = 100
-	maxIconLen = 50 // lucide names are short kebab-case; 50 is generous headroom
+	maxNameLen      = 100
+	maxIconLen      = 50 // lucide names are short kebab-case; 50 is generous headroom
+	budgetScale     = 2
+	maxBudgetDigits = 18 // matches NUMERIC(18,2)
 )
 
 var (
 	ErrEmptyName   = errors.New("name is required")
 	ErrNameTooLong = errors.New("name exceeds 100 characters")
+	ErrBadBudget   = errors.New("budget must be a positive amount, up to 2 decimals")
 )
 
 // Category is the wire shape, decoupled from the generated db row so the public
 // contract is not hostage to schema or sqlc changes.
 type Category struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Icon      string    `json:"icon"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	Icon          string    `json:"icon"`
+	MonthlyBudget *string   `json:"monthly_budget"` // decimal string, null when unset
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Input is the create/update body. Icon is a lucide icon name (kebab-case),
-// optional — empty means no icon.
+// MonthlyBudget a decimal string; both optional (null/"" clears them).
 type Input struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"`
+	Name          string  `json:"name"`
+	Icon          string  `json:"icon"`
+	MonthlyBudget *string `json:"monthly_budget"`
 }
 
 type Service struct {
@@ -70,9 +77,14 @@ func (s *Service) Create(ctx context.Context, in Input) (Category, error) {
 	if err != nil {
 		return Category{}, err
 	}
+	budget, err := parseBudget(in.MonthlyBudget)
+	if err != nil {
+		return Category{}, err
+	}
 	r, err := s.st.CreateCategory(ctx, db.CreateCategoryParams{
-		Name: name,
-		Icon: cleanIcon(in.Icon),
+		Name:          name,
+		Icon:          cleanIcon(in.Icon),
+		MonthlyBudget: budget,
 	})
 	if err != nil {
 		return Category{}, store.Classify(err)
@@ -85,10 +97,15 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Category, err
 	if err != nil {
 		return Category{}, err
 	}
+	budget, err := parseBudget(in.MonthlyBudget)
+	if err != nil {
+		return Category{}, err
+	}
 	r, err := s.st.UpdateCategory(ctx, db.UpdateCategoryParams{
-		ID:   id,
-		Name: name,
-		Icon: cleanIcon(in.Icon),
+		ID:            id,
+		Name:          name,
+		Icon:          cleanIcon(in.Icon),
+		MonthlyBudget: budget,
 	})
 	if err != nil {
 		return Category{}, store.Classify(err)
@@ -107,13 +124,62 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func toCategory(r db.Category) Category {
+func toCategory(r db.CategoryRow) Category {
 	return Category{
-		ID:        r.ID,
-		Name:      r.Name,
-		Icon:      r.Icon,
-		CreatedAt: r.CreatedAt.Time,
+		ID:            r.ID,
+		Name:          r.Name,
+		Icon:          r.Icon,
+		MonthlyBudget: textPtr(r.MonthlyBudget),
+		CreatedAt:     r.CreatedAt.Time,
 	}
+}
+
+func textPtr(t pgtype.Text) *string {
+	if !t.Valid {
+		return nil
+	}
+	return &t.String
+}
+
+// parseBudget turns the optional input into a NUMERIC; nil/"" ⇒ NULL (no budget).
+// Mirrors the transaction amount parser: a base-10 mantissa + exponent, no float.
+func parseBudget(in *string) (pgtype.Numeric, error) {
+	if in == nil {
+		return pgtype.Numeric{}, nil
+	}
+	s := strings.TrimSpace(*in)
+	if s == "" {
+		return pgtype.Numeric{}, nil
+	}
+	intPart, fracPart, hasFrac := strings.Cut(s, ".")
+	if intPart == "" || (hasFrac && fracPart == "") || len(fracPart) > budgetScale {
+		return pgtype.Numeric{}, ErrBadBudget
+	}
+	if !allDigits(intPart) || (hasFrac && !allDigits(fracPart)) {
+		return pgtype.Numeric{}, ErrBadBudget
+	}
+	// NUMERIC(18,2) always stores scale 2, so the integer part must fit in
+	// precision − scale = 16 digits, else Postgres overflows on insert.
+	if len(intPart) > maxBudgetDigits-budgetScale {
+		return pgtype.Numeric{}, ErrBadBudget
+	}
+	mantissa, ok := new(big.Int).SetString(intPart+fracPart, 10)
+	if !ok || mantissa.Sign() <= 0 { // rejects 0 and any non-positive
+		return pgtype.Numeric{}, ErrBadBudget
+	}
+	return pgtype.Numeric{Int: mantissa, Exp: int32(-len(fracPart)), Valid: true}, nil
+}
+
+func allDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // Stored as-is: the picker only sends valid lucide names, so no server-side

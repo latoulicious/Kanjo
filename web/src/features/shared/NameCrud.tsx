@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { api, ApiError } from "@/lib/api"
+import { formatAmount } from "@/lib/money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -38,6 +39,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -47,11 +49,13 @@ import { CategoryIcon } from "./CategoryIcon"
 import { IconPicker } from "./IconPicker"
 
 // Categories and projects are identical name buckets sharing one manager;
-// categories opt into the icon picker via withIcon. Accounts stays bespoke (is_liquid).
+// categories opt into the icon picker (withIcon) + budget (withBudget). Accounts
+// stays bespoke (is_liquid).
 interface NamedRow {
   id: number
   name: string
   icon?: string
+  monthly_budget?: string | null
   created_at: string
 }
 
@@ -62,18 +66,25 @@ interface Props {
   singular: string // lowercased noun, e.g. "category"
   placeholder: string
   withIcon?: boolean // show the lucide icon picker + render icons in the list
+  withBudget?: boolean // show the monthly-budget field
 }
 
-// icon rides along for every bucket; the API ignores unknown JSON fields, so
-// projects harmlessly post icon:"". max 100 mirrors the API name limit.
-const schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(100, "Max 100 characters"),
-  icon: z.string(),
-})
+// icon/monthly_budget ride along for every bucket; the API ignores unknown JSON
+// fields, so projects harmlessly post the extras. max 100 mirrors the name limit.
+const schema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Name is required")
+      .max(100, "Max 100 characters"),
+    icon: z.string(),
+    monthly_budget: z.string(),
+  })
+  .refine(
+    (v) => v.monthly_budget === "" || /^\d+(\.\d{1,2})?$/.test(v.monthly_budget),
+    { path: ["monthly_budget"], message: "Positive amount, up to 2 decimals" },
+  )
 type FormValues = z.infer<typeof schema>
 
 export function NameCrud({
@@ -83,6 +94,7 @@ export function NameCrud({
   singular,
   placeholder,
   withIcon = false,
+  withBudget = false,
 }: Props) {
   const qc = useQueryClient()
   const key = [path]
@@ -112,11 +124,15 @@ export function NameCrud({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", icon: "" },
+    defaultValues: { name: "", icon: "", monthly_budget: "" },
   })
   useEffect(() => {
     if (dialogOpen)
-      form.reset({ name: editing?.name ?? "", icon: editing?.icon ?? "" })
+      form.reset({
+        name: editing?.name ?? "",
+        icon: editing?.icon ?? "",
+        monthly_budget: editing?.monthly_budget ?? "",
+      })
   }, [dialogOpen, editing, form])
 
   async function onSubmit(values: FormValues) {
@@ -146,6 +162,8 @@ export function NameCrud({
     }
   }
 
+  const cols = withBudget ? 3 : 2 // Name + [Budget] + actions
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -168,14 +186,16 @@ export function NameCrud({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Created</TableHead>
+              {withBudget && <TableHead className="text-right">Budget</TableHead>}
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <RowMessage>Loading…</RowMessage>}
-            {isError && <RowMessage>Failed to load.</RowMessage>}
-            {rows?.length === 0 && <RowMessage>Nothing here yet.</RowMessage>}
+            {isLoading && <RowMessage cols={cols}>Loading…</RowMessage>}
+            {isError && <RowMessage cols={cols}>Failed to load.</RowMessage>}
+            {rows?.length === 0 && (
+              <RowMessage cols={cols}>Nothing here yet.</RowMessage>
+            )}
             {rows?.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">
@@ -189,9 +209,11 @@ export function NameCrud({
                     {row.name}
                   </span>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(row.created_at).toLocaleDateString()}
-                </TableCell>
+                {withBudget && (
+                  <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                    {row.monthly_budget ? formatAmount(row.monthly_budget) : "—"}
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <Button
@@ -260,6 +282,29 @@ export function NameCrud({
                   )}
                 />
               )}
+              {withBudget && (
+                <FormField
+                  control={form.control}
+                  name="monthly_budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly budget</FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="0"
+                          className="font-mono"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Per pay cycle. Blank for no limit.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <DialogFooter>
                 <Button
                   type="button"
@@ -306,11 +351,11 @@ export function NameCrud({
   )
 }
 
-function RowMessage({ children }: { children: ReactNode }) {
+function RowMessage({ cols, children }: { cols: number; children: ReactNode }) {
   return (
     <TableRow>
       <TableCell
-        colSpan={3}
+        colSpan={cols}
         className="py-8 text-center text-muted-foreground"
       >
         {children}

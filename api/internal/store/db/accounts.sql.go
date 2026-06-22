@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAccount = `-- name: CreateAccount :one
@@ -60,23 +62,37 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, name, is_liquid, created_at FROM accounts ORDER BY name
+SELECT a.id, a.name, a.is_liquid, a.created_at,
+  COALESCE(SUM(CASE WHEN t.is_inflow THEN t.amount ELSE -t.amount END), 0)::numeric(18,2)::text AS balance
+FROM accounts a
+LEFT JOIN transactions t ON t.account_id = a.id
+GROUP BY a.id
+ORDER BY (lower(a.name) = 'cash'), a.name
 `
 
-func (q *Queries) ListAccounts(ctx context.Context) ([]Account, error) {
+type ListAccountsRow struct {
+	ID        int64              `json:"id"`
+	Name      string             `json:"name"`
+	IsLiquid  bool               `json:"is_liquid"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Balance   string             `json:"balance"`
+}
+
+func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	rows, err := q.db.Query(ctx, listAccounts)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Account
+	var items []ListAccountsRow
 	for rows.Next() {
-		var i Account
+		var i ListAccountsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.IsLiquid,
 			&i.CreatedAt,
+			&i.Balance,
 		); err != nil {
 			return nil, err
 		}

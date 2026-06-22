@@ -33,29 +33,7 @@ import {
   ProjectCostChart,
 } from "./charts"
 import { Button } from "@/components/ui/button"
-
-// A "month" here is the pay cycle (payday = the 27th). Presets just set from/to;
-// the API already takes an arbitrary range, so no backend month redefinition.
-// ponytail: PAYDAY hardcoded — single user. Promote to a setting if it varies.
-const PAYDAY = 27
-
-function isoDate(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
-
-// Start of the pay cycle on/before `ref`, offset back by `cyclesAgo` cycles.
-function cycleStart(cyclesAgo = 0, ref = new Date()): Date {
-  const month = ref.getDate() >= PAYDAY ? ref.getMonth() : ref.getMonth() - 1
-  return new Date(ref.getFullYear(), month - cyclesAgo, PAYDAY)
-}
-
-// Last day of the cycle before this one (the 26th, today-relative).
-function lastCycleEnd(ref = new Date()): Date {
-  const d = cycleStart(0, ref)
-  d.setDate(d.getDate() - 1)
-  return d
-}
+import { isoDate, cycleStart, lastCycleEnd } from "@/lib/cycle"
 
 export function ReportsPage() {
   const [range, setRange] = useState<Range>({})

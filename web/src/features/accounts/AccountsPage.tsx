@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ApiError } from "@/lib/api"
+import { formatAmount } from "@/lib/money"
 import type { Account } from "@/types"
 import { useAccounts, useDeleteAccount } from "./hooks"
 import { AccountDialog } from "./AccountDialog"
@@ -75,7 +76,7 @@ export function AccountsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
@@ -91,8 +92,8 @@ export function AccountsPage() {
                     {account.is_liquid ? "Liquid" : "Reserve"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(account.created_at).toLocaleDateString()}
+                <TableCell className="text-right font-mono tabular-nums">
+                  {formatAmount(account.balance)}
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
