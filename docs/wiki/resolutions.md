@@ -115,3 +115,64 @@ Format per resolution:
   still mounts the SPA.
 - constraints honored: smallest change (2 lines, no behavior change on the happy
   path); no public contract touched; no unrelated cleanup.
+
+## R-012 badge Slot import finding declined  (resolves F-012)
+- date: 2026-06-22
+- change: wontfix — no code change. Confirmed false positive: shadcn's current
+  output imports primitives from the **unified `radix-ui`** package (v1.6.0, in
+  `package.json`) and uses `Slot.Root`; the advised `@radix-ui/react-slot` default
+  import would not match the `Slot.Root` usage and would break the build. The tree
+  builds and types clean as-is. Decided with the user.
+- files: —
+- verification: `pnpm build` (tsc + vite) green with `import { Slot } from "radix-ui"`.
+- constraints honored: don't modify working vendored code; no unrelated churn.
+
+## R-013 form.tsx dead-guard left as vendored  (resolves F-013)
+- date: 2026-06-22
+- change: wontfix — no code change. `ui/form.tsx` is shadcn copied in verbatim
+  (`conventions.md`: primitives are vendored, not a dependency); the ineffective
+  `if (!fieldContext)` guard ships this way upstream and only fails to throw on
+  misuse (calling `useFormField` outside `<FormField>`) that this codebase never
+  does. Patching a vendored file would drift it from any future `shadcn add` regen
+  for no functional gain. Decided with the user.
+- files: —
+- verification: all forms use `FormField`/`useFormField` correctly; the guard path
+  is unreachable in our code.
+- constraints honored: no patching of vendored upstream cosmetics; sibling
+  primitives untouched.
+
+## R-014 remove unused next-themes  (resolves F-014)
+- date: 2026-06-22
+- change: `pnpm remove next-themes`. The dep was only needed by shadcn's stock
+  `sonner.tsx`, which was rewritten to a single light theme (no `useTheme`); the
+  package is now unreferenced. Drops it from `package.json` + lockfile.
+- files: web/package.json, web/pnpm-lock.yaml
+- verification: `grep` shows no `next-themes` import in `src`; `pnpm build` +
+  `pnpm lint` green after removal.
+- constraints honored: smallest change; removes dead weight only, no behavior
+  change.
+
+## R-015 alert-dialog "use client" left as vendored  (resolves F-015)
+- date: 2026-06-22
+- change: wontfix — no code change. The `"use client"` directive is a harmless
+  no-op in a Vite SPA and is present across all vendored shadcn primitives; editing
+  one file alone is inconsistent cleanup on copied-in code. Decided with the user.
+- files: —
+- verification: build/lint green; directive has no runtime effect under Vite.
+- constraints honored: no selective churn on vendored primitives.
+
+## R-016 narrow AccountDialog + enable TS strict  (resolves F-016)
+- date: 2026-06-22
+- change: two parts. (1) `onSubmit` now branches on `if (account)` instead of the
+  `editing` boolean alias, so TypeScript soundly narrows the optional prop before
+  `account.id`. (2) Enabled `"strict": true` in `tsconfig.app.json` — the Vite-8
+  scaffold had omitted it, which is why the unsound access compiled. Strict is the
+  real fix; the narrowing is what strict then requires. Decided with the user
+  (strict mode was a parallel find, beyond the CodeRabbit report).
+- files: web/src/features/accounts/AccountDialog.tsx, web/tsconfig.app.json
+- verification: `pnpm build` (tsc -b with strict) green — the whole tree, incl.
+  vendored ui and the accounts feature, type-checks under strict with no other
+  errors surfaced; `pnpm lint` clean.
+- constraints honored: smallest safe change; strict tightens the foundation
+  (money-app null safety) without altering runtime behavior; no public contract
+  touched.

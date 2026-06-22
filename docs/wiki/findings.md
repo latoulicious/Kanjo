@@ -103,3 +103,43 @@ Format per finding:
 - location: web/src/main.tsx:9
 - problem: `createRoot(document.getElementById("root")!)` asserts the root element is non-null without checking. If `index.html` ever ships without `#root`, React throws a cryptic `Cannot read properties of null` instead of a clear message. The `#root` div is in our own `index.html` so the case is unreachable today, but the assertion hides the failure mode.
 - status: resolved (→ R-011)
+
+## F-012 badge.tsx imports Slot from "radix-ui"
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S1) — reported "critical"
+- severity: low (false positive)
+- location: web/src/components/ui/badge.tsx:3
+- problem: review claimed `import { Slot } from "radix-ui"` is wrong and should be `@radix-ui/react-slot`, else the build fails. False positive: current shadcn uses the **unified `radix-ui` package** (v1.6.0, present in package.json), which re-exports primitives as namespaces — badge/form use `Slot.Root`, not the legacy default `Slot` from `@radix-ui/react-slot`. The advised swap would break the call. `pnpm build` resolves and compiles clean.
+- status: resolved (→ R-012, wontfix)
+
+## F-013 form.tsx useFormField guard is dead
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S1) — reported "major"
+- severity: low (vendored; unreachable in our usage)
+- location: web/src/components/ui/form.tsx:50
+- problem: `FormFieldContext` is created with `{} as FormFieldContextValue`, an always-truthy default, so `if (!fieldContext)` never fires (and runs after `fieldContext.name` was already read on line 47). The "used outside <FormField>" error can't throw. This is upstream shadcn code copied verbatim; it only mis-degrades on developer misuse (calling `useFormField` outside a `FormField`), which the codebase never does.
+- status: resolved (→ R-013, wontfix)
+
+## F-014 unused next-themes dependency
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S1) — reported "minor"
+- severity: low
+- location: web/package.json:18
+- problem: `next-themes` was pulled in transitively by shadcn's `sonner` component, but `sonner.tsx` was rewritten to drop it (single light theme, no next-themes). The dependency is now unused dead weight in `package.json`.
+- status: resolved (→ R-014)
+
+## F-015 alert-dialog.tsx has a "use client" directive
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S1) — reported "minor"
+- severity: low (vendored; cosmetic)
+- location: web/src/components/ui/alert-dialog.tsx:1
+- problem: the `"use client"` directive is a Next.js App Router marker, a no-op in a Vite SPA. Cosmetic only. Shared by the other vendored shadcn primitives (dialog, table, etc.); removing it from one file alone is inconsistent churn on copied-in code.
+- status: resolved (→ R-015, wontfix)
+
+## F-016 AccountDialog edit branch not narrowed (TS strict gap)
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S1) — reported "minor"
+- severity: low
+- location: web/src/features/accounts/AccountDialog.tsx:65
+- problem: `onSubmit` reads `account.id` inside `if (editing)`, but `editing` is a separate boolean alias so TypeScript cannot narrow the optional `account` prop through it. It compiled only because the Vite-8 scaffold left `strict` **off** in `tsconfig.app.json` (so `strictNullChecks` wasn't enforcing the access). Two defects: the unsound narrowing, and the missing strict mode that hid it.
+- status: resolved (→ R-016)
