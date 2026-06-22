@@ -60,7 +60,7 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, name, is_liquid, created_at FROM accounts ORDER BY name
+SELECT id, name, is_liquid, created_at FROM accounts ORDER BY (lower(name) = 'cash'), name
 `
 
 func (q *Queries) ListAccounts(ctx context.Context) ([]Account, error) {
