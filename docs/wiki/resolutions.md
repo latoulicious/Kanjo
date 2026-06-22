@@ -102,3 +102,16 @@ Format per resolution:
   test-quality only, no runtime impact.
 - constraints honored: no unrelated cleanup in the feature diff; smallest safe
   action; sibling modules untouched.
+
+## R-011 guard the SPA root element  (resolves F-011)
+- date: 2026-06-22
+- change: replaced the non-null assertion with a checked lookup — `main.tsx` now
+  reads `getElementById("root")` into a const and throws
+  `root element #root not found in index.html` when absent, before `createRoot`.
+  Swaps React's cryptic null deref for a descriptive boot error. Decided with the
+  user (fix over wontfix — trivial and clearer).
+- files: web/src/main.tsx
+- verification: `pnpm build` (tsc + vite) green; `pnpm lint` clean; dev server
+  still mounts the SPA.
+- constraints honored: smallest change (2 lines, no behavior change on the happy
+  path); no public contract touched; no unrelated cleanup.

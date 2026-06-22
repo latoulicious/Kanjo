@@ -95,3 +95,11 @@ Format per finding:
 - location: api/internal/transaction/transfer_test.go:53
 - problem: `TestTransferRowsWithFee` does `group, _ := newGroupID()`, discarding the error, while `TestTransferRowsNoFee` checks it. A consistency nit: if `newGroupID` ever failed, the with-fee test would proceed on a zero UUID and fail confusingly downstream. Pre-existing (transactions 2b, committed `f9efaa8`); not part of the reports diff. Surfaced only because `--base main` widened scope to the whole branch.
 - status: resolved (→ R-010, wontfix)
+
+## F-011 SPA root mount uses unchecked non-null assertion
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S0 scaffold) — reported "minor"
+- severity: low
+- location: web/src/main.tsx:9
+- problem: `createRoot(document.getElementById("root")!)` asserts the root element is non-null without checking. If `index.html` ever ships without `#root`, React throws a cryptic `Cannot read properties of null` instead of a clear message. The `#root` div is in our own `index.html` so the case is unreachable today, but the assertion hides the failure mode.
+- status: resolved (→ R-011)

@@ -1,8 +1,8 @@
 # Design System
 
 Source: the Kanjo plan (`Kanjo.pdf`). Tokens here are mirrored in
-`web/tailwind.config.ts` and `web/src/index.css` — keep them in sync; code is the
-source of truth.
+`web/src/index.css` (Tailwind v4 is CSS-first — tokens live in `:root` + `@theme`,
+there is no `tailwind.config.ts`). Keep them in sync; code is the source of truth.
 
 ## Design Philosophy
 
