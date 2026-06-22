@@ -252,3 +252,16 @@ Format per resolution:
   smoke (web nginx starts, `/api/v1/accounts` proxied 200).
 - constraints honored: timeouts aligned to the existing server-side budget, no new
   behavior.
+
+## R-023 sheet.tsx radix-ui import finding declined  (resolves F-023)
+- date: 2026-06-22
+- change: wontfix — no code change. `from "radix-ui"` is the unified-package
+  convention used by every other vendored shadcn primitive in the repo and recorded
+  since S1 ("radix-ui unified package is now a dependency — shadcn's current
+  convention"). CodeRabbit applied the legacy per-package `@radix-ui/react-*` path,
+  which is not a dependency here; switching to it would break the build. Decided
+  with the user.
+- files: —
+- verification: `web/package.json` lists `"radix-ui": "^1.6.0"`; `pnpm build` green
+  with the current import; sibling `dialog.tsx:5` uses the identical pattern.
+- constraints honored: no patching of valid vendored code; consistent with R-020.

@@ -135,7 +135,7 @@ export function NameCrud({ path, title, subtitle, singular, placeholder }: Props
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>

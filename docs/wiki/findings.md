@@ -191,3 +191,11 @@ Format per finding:
 - location: web/nginx.conf:15-21
 - problem: the `/api/` proxy uses nginx defaults (~60s). A slow or hung API would block nginx workers, risking worker exhaustion under load.
 - status: resolved (→ R-022, fixed)
+
+## F-023 sheet.tsx radix-ui import path "does not exist"
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web M1) — reported "critical"
+- severity: low (false positive)
+- location: web/src/components/ui/sheet.tsx:5
+- problem: review claimed `import { Dialog as SheetPrimitive } from "radix-ui"` points at a non-existent package and suggested `@radix-ui/react-dialog`. False positive: `radix-ui` is the **unified package** (a dependency, `"radix-ui": "^1.6.0"`) that shadcn's current output imports from — every vendored primitive already does this (`dialog.tsx`, `alert-dialog.tsx`, `select.tsx`, `switch.tsx`). `pnpm build` (tsc + vite) is green, so the import resolves and bundles. The suggested per-package path `@radix-ui/react-dialog` is **not installed**; applying it would break the build.
+- status: resolved (→ R-023, wontfix)

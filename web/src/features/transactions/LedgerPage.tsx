@@ -113,14 +113,14 @@ export function LedgerPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium">Ledger</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Every entry. The atomic unit everything else is derived from.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setTransferOpen(true)}>
             <ArrowLeftRight className="size-4" /> New transfer
           </Button>
@@ -134,7 +134,7 @@ export function LedgerPage() {
         <FilterField label="From">
           <Input
             type="date"
-            className="w-40"
+            className="w-full sm:w-40"
             value={filter.from ?? ""}
             onChange={(e) =>
               setFilter((f) => ({ ...f, from: e.target.value || undefined }))
@@ -144,7 +144,7 @@ export function LedgerPage() {
         <FilterField label="To">
           <Input
             type="date"
-            className="w-40"
+            className="w-full sm:w-40"
             value={filter.to ?? ""}
             onChange={(e) =>
               setFilter((f) => ({ ...f, to: e.target.value || undefined }))
@@ -185,8 +185,8 @@ export function LedgerPage() {
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Account</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Project</TableHead>
-              <TableHead>Tags</TableHead>
+              <TableHead className="hidden lg:table-cell">Project</TableHead>
+              <TableHead className="hidden lg:table-cell">Tags</TableHead>
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
@@ -232,12 +232,12 @@ export function LedgerPage() {
                       ? (categoryName.get(tx.category_id) ?? `#${tx.category_id}`)
                       : "—"}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                  <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
                     {tx.project_id != null
                       ? (projectName.get(tx.project_id) ?? `#${tx.project_id}`)
                       : "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {tx.tags.map((t) => (
                         <Badge key={t} variant="secondary">
@@ -315,7 +315,7 @@ function FilterField({
   children: ReactNode
 }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <label className="flex w-full flex-col gap-1 text-xs text-muted-foreground sm:w-auto">
       {label}
       {children}
     </label>
@@ -339,7 +339,7 @@ function FilterSelect({
         value={value != null ? String(value) : ALL}
         onValueChange={(v) => onChange(v === ALL ? undefined : Number(v))}
       >
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="w-full sm:w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
