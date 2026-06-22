@@ -28,6 +28,13 @@
   --input: #e5ded3;
   --ring: #6f5e53;
 
+  /* Chart palette — muted earthy tones on paper. */
+  --chart-1: #6f5e53;
+  --chart-2: #4f6f52;
+  --chart-3: #9b4d4d;
+  --chart-4: #8a7a6d;
+  --chart-5: #6b6b6b;
+
   --font-sans: "Geist", "Inter", system-ui, sans-serif;
   --font-serif: "Noto Serif JP", "IBM Plex Serif", serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -60,6 +67,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);

@@ -167,3 +167,11 @@ Format per finding:
 - location: web/src/components/ui/textarea.tsx:10
 - problem: the `field-sizing-content` utility (auto-grow) isn't supported in older Firefox; those users get fixed sizing. Pure progressive enhancement — `min-h-16` gives a sane fallback, and forms set `rows`. Vendored shadcn class; not worth diverging the copied-in file.
 - status: resolved (→ R-019, wontfix)
+
+## F-020 chart.tsx uses invalid Tailwind var syntax
+- date: 2026-06-22
+- source: CodeRabbit (`review --agent -t uncommitted`, web S4) — reported "critical"
+- severity: low (false positive)
+- location: web/src/components/ui/chart.tsx:223
+- problem: review claimed `border-(--color-border)` / `bg-(--color-bg)` are invalid Tailwind and styles won't apply. False positive: `(--var)` is **Tailwind v4's CSS-variable shorthand** (we run tailwindcss ^4.3); v3 rules don't apply. Proven — the built CSS contains `background-color:var(--color-bg)`. Vendored shadcn-for-v4 tooltip indicator.
+- status: resolved (→ R-020, wontfix)

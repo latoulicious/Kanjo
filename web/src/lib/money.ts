@@ -8,3 +8,9 @@ export function formatAmount(amount: string): string {
   const n = Number(amount)
   return Number.isFinite(n) ? `Rp ${idr.format(n)}` : amount
 }
+
+// For charts: decimal string → number (plotting only, same float caveat).
+export function toNumber(amount: string): number {
+  const n = Number(amount)
+  return Number.isFinite(n) ? n : 0
+}

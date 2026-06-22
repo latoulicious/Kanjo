@@ -28,11 +28,14 @@ export function useTransactions(filter: TransactionFilter) {
   })
 }
 
-// Any transaction or transfer write invalidates the whole ledger (and, later,
-// the derived reports keyed elsewhere).
+// Any transaction or transfer write invalidates the ledger and the derived
+// reports (balances/burn/etc. are recomputed from transactions on each request).
 function useInvalidate() {
   const qc = useQueryClient()
-  return () => qc.invalidateQueries({ queryKey: [KEY] })
+  return () => {
+    qc.invalidateQueries({ queryKey: [KEY] })
+    qc.invalidateQueries({ queryKey: ["reports"] })
+  }
 }
 
 export function useCreateTransaction() {

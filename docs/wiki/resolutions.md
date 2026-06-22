@@ -213,3 +213,16 @@ Format per resolution:
 - files: —
 - verification: textarea renders and accepts input regardless of auto-grow support.
 - constraints honored: no selective churn on vendored primitives.
+
+## R-020 chart var-syntax finding declined  (resolves F-020)
+- date: 2026-06-22
+- change: wontfix — no code change. `bg-(--color-bg)` / `border-(--color-border)`
+  are Tailwind v4 CSS-variable shorthand (project runs tailwindcss ^4.3), not the
+  invalid-in-v3 syntax CodeRabbit assumed. Verified the built CSS emits
+  `background-color:var(--color-bg)`, so the rule compiles and applies. The file is
+  vendored shadcn v4 output; rewriting to `bg-[var(--…)]` would diverge it for an
+  identical result. Decided with the user.
+- files: —
+- verification: `grep` of `dist/assets/*.css` shows the compiled
+  `background-color:var(--color-bg)` rule; `pnpm build` green.
+- constraints honored: no patching of valid vendored code; consistent with R-012.
