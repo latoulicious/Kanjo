@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { Layout } from "@/components/Layout"
-import { Placeholder } from "@/components/Placeholder"
+import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
 import { LedgerPage } from "@/features/transactions/LedgerPage"
 import { NameCrud } from "@/features/shared/NameCrud"
@@ -14,12 +14,11 @@ const ReportsPage = lazy(() =>
   })),
 )
 
-// Feature pages land slice by slice; routes render placeholders until then.
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Placeholder title="Dashboard" />} />
+        <Route index element={<DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route
