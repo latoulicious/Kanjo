@@ -52,15 +52,21 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   transaction?: Transaction
+  duplicate?: boolean // pre-fill from transaction but create a new entry (date = today)
 }
 
-export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
+export function TransactionDialog({
+  open,
+  onOpenChange,
+  transaction,
+  duplicate = false,
+}: Props) {
   const accounts = useResourceList<Account>("accounts")
   const categories = useResourceList<Category>("categories")
   const projects = useResourceList<Project>("projects")
   const create = useCreateTransaction()
   const update = useUpdateTransaction()
-  const editing = transaction != null
+  const editing = transaction != null && !duplicate
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -81,7 +87,7 @@ export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
     form.reset(
       transaction
         ? {
-            occurred_on: transaction.occurred_on,
+            occurred_on: editing ? transaction.occurred_on : todayStr(),
             description: transaction.description,
             direction: transaction.direction === "income" ? "income" : "expense",
             amount: transaction.amount,
@@ -105,7 +111,7 @@ export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
             tags: "",
           },
     )
-  }, [open, transaction, form])
+  }, [open, transaction, editing, form])
 
   async function onSubmit(v: FormValues) {
     const input: TransactionInput = {
@@ -119,7 +125,7 @@ export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
       tags: splitTags(v.tags),
     }
     try {
-      if (transaction) {
+      if (transaction && !duplicate) {
         await update.mutateAsync({ id: transaction.id, input })
         toast.success("Transaction updated")
       } else {
@@ -137,7 +143,11 @@ export function TransactionDialog({ open, onOpenChange, transaction }: Props) {
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {editing ? "Edit transaction" : "New transaction"}
+            {editing
+              ? "Edit transaction"
+              : duplicate
+                ? "Duplicate transaction"
+                : "New transaction"}
           </DialogTitle>
           <DialogDescription>
             One ledger entry — income or expense.
