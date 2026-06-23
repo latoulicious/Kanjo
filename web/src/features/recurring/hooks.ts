@@ -48,6 +48,7 @@ export function usePostRecurring() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] })
       qc.invalidateQueries({ queryKey: ["reports"] })
+      qc.invalidateQueries({ queryKey: ["accounts"] })
       qc.invalidateQueries({ queryKey: KEY })
     },
   })
