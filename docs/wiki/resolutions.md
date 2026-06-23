@@ -265,3 +265,17 @@ Format per resolution:
 - verification: `web/package.json` lists `"radix-ui": "^1.6.0"`; `pnpm build` green
   with the current import; sibling `dialog.tsx:5` uses the identical pattern.
 - constraints honored: no patching of valid vendored code; consistent with R-020.
+
+## R-024 clarify fee_category_id validation in docs, keep code  (resolves F-024)
+- date: 2026-06-23
+- change: doc-only. Reworded `docs/wiki/modules/transactions.md` so a supplied
+  `fee_category_id` is documented as pre-validated **whenever present** (a stray bad
+  id is still a 400), merely **unused** when no fee row consumes it; "ignored" no
+  longer overclaims. Also fixed "get-or-created" → "get-or-create". Code left as-is:
+  changing it to skip validation when `fee` is nil would alter existing behavior (a
+  previously-rejected bad id would pass silently), which is out of scope. Decided
+  with the user.
+- files: docs/wiki/modules/transactions.md
+- verification: `go build ./... && go vet && go test ./internal/transaction/...`
+  green; behavior identical to pre-change (only the requirement-vs-default path moved).
+- constraints honored: preserved existing behavior; smallest safe change (doc, not code).

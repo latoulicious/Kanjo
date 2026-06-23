@@ -51,6 +51,19 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int64) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
+const ensureCategoryByName = `-- name: EnsureCategoryByName :one
+INSERT INTO categories (name) VALUES ($1)
+ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+RETURNING id
+`
+
+func (q *Queries) EnsureCategoryByName(ctx context.Context, name string) (int64, error) {
+	row := q.db.QueryRow(ctx, ensureCategoryByName, name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getCategory = `-- name: GetCategory :one
 SELECT id, name, icon, monthly_budget::text AS monthly_budget, created_at FROM categories WHERE id = $1
 `

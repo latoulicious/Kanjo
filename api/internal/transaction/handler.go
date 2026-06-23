@@ -155,7 +155,7 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		errors.Is(err, ErrProjectNotFound), errors.Is(err, ErrFromAccountRequired),
 		errors.Is(err, ErrToAccountRequired), errors.Is(err, ErrSameAccount),
 		errors.Is(err, ErrFromAccountNotFound), errors.Is(err, ErrToAccountNotFound),
-		errors.Is(err, ErrFeeCategoryRequired), errors.Is(err, ErrBadDay):
+		errors.Is(err, ErrBadDay):
 		httpx.WriteErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		httpx.WriteErr(w, http.StatusNotFound, "transaction not found")

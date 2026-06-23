@@ -37,8 +37,9 @@ import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import { useCreateTransfer } from "./hooks"
 import { NONE, amountField, dateField, splitTags, todayStr } from "./form"
 
-// Transfers are immutable (no edit) — this dialog only creates. A fee requires a
-// fee category (mirrors the API: an uncategorized fee would skew burn reports).
+// Transfers are immutable (no edit) — this dialog only creates. A fee with no
+// category falls back to the API's default "Transfer Fee" bucket; picking one
+// overrides it (so a fee is never silently uncategorized in burn reports).
 const schema = z
   .object({
     occurred_on: dateField,
@@ -57,10 +58,6 @@ const schema = z
   .refine((v) => v.fee === "" || /^\d+(\.\d{1,2})?$/.test(v.fee), {
     path: ["fee"],
     message: "Positive amount, up to 2 decimals",
-  })
-  .refine((v) => v.fee === "" || v.fee_category_id !== NONE, {
-    path: ["fee_category_id"],
-    message: "Required when a fee is set",
   })
 type FormValues = z.infer<typeof schema>
 
@@ -105,7 +102,10 @@ export function TransferDialog({ open, onOpenChange }: Props) {
     }
     if (v.fee) {
       input.fee = v.fee
-      input.fee_category_id = Number(v.fee_category_id)
+      // Omit when None — the API defaults the fee to its "Transfer Fee" category.
+      if (v.fee_category_id !== NONE) {
+        input.fee_category_id = Number(v.fee_category_id)
+      }
     }
     try {
       await create.mutateAsync(input)
@@ -257,7 +257,9 @@ export function TransferDialog({ open, onOpenChange }: Props) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>Required when a fee is set.</FormDescription>
+                    <FormDescription>
+                      Defaults to "Transfer Fee" when left as None.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
