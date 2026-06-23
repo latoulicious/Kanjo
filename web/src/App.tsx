@@ -44,6 +44,7 @@ export default function App() {
               subtitle="Initiatives that own transactions, so their cost is visible."
               singular="project"
               placeholder="e.g. LazyScan Lite"
+              withIcon
             />
           }
         />

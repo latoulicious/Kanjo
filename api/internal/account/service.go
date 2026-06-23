@@ -24,6 +24,7 @@ type Account struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	IsLiquid  bool      `json:"is_liquid"`
+	Icon      string    `json:"icon"`    // lucide icon name (kebab-case), "" = none
 	Balance   string    `json:"balance"` // signed decimal string; only List computes it
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -33,6 +34,7 @@ type Account struct {
 type Input struct {
 	Name     string `json:"name"`
 	IsLiquid *bool  `json:"is_liquid"`
+	Icon     string `json:"icon"`
 }
 
 type Service struct {
@@ -54,6 +56,7 @@ func (s *Service) List(ctx context.Context) ([]Account, error) {
 			ID:        r.ID,
 			Name:      r.Name,
 			IsLiquid:  r.IsLiquid,
+			Icon:      r.Icon,
 			Balance:   r.Balance,
 			CreatedAt: r.CreatedAt.Time,
 		}
@@ -77,6 +80,7 @@ func (s *Service) Create(ctx context.Context, in Input) (Account, error) {
 	r, err := s.st.CreateAccount(ctx, db.CreateAccountParams{
 		Name:     name,
 		IsLiquid: liquidOrDefault(in.IsLiquid),
+		Icon:     store.CleanIcon(in.Icon),
 	})
 	if err != nil {
 		return Account{}, store.Classify(err)
@@ -93,6 +97,7 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Account, erro
 		ID:       id,
 		Name:     name,
 		IsLiquid: liquidOrDefault(in.IsLiquid),
+		Icon:     store.CleanIcon(in.Icon),
 	})
 	if err != nil {
 		return Account{}, store.Classify(err)
@@ -118,6 +123,7 @@ func toAccount(r db.Account) Account {
 		ID:        r.ID,
 		Name:      r.Name,
 		IsLiquid:  r.IsLiquid,
+		Icon:      r.Icon,
 		Balance:   "0.00",
 		CreatedAt: r.CreatedAt.Time,
 	}

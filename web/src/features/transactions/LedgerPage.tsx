@@ -59,8 +59,8 @@ export function LedgerPage() {
   const categories = useResourceList<Category>("categories")
   const projects = useResourceList<Project>("projects")
 
-  const accountName = useMemo(
-    () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
+  const accountById = useMemo(
+    () => new Map((accounts.data ?? []).map((a) => [a.id, a])),
     [accounts.data],
   )
   const categoryById = useMemo(
@@ -226,7 +226,10 @@ export function LedgerPage() {
                     </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {accountName.get(tx.account_id) ?? `#${tx.account_id}`}
+                    <span className="inline-flex items-center gap-2">
+                      <CategoryIcon name={accountById.get(tx.account_id)?.icon} />
+                      {accountById.get(tx.account_id)?.name ?? `#${tx.account_id}`}
+                    </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {tx.category_id != null ? (

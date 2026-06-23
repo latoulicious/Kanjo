@@ -25,6 +25,7 @@ import {
 import { ApiError } from "@/lib/api"
 import { formatAmount } from "@/lib/money"
 import type { Account } from "@/types"
+import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import { useAccounts, useDeleteAccount } from "./hooks"
 import { AccountDialog } from "./AccountDialog"
 
@@ -86,7 +87,15 @@ export function AccountsPage() {
             {accounts?.length === 0 && <RowMessage>No accounts yet.</RowMessage>}
             {accounts?.map((account) => (
               <TableRow key={account.id}>
-                <TableCell className="font-medium">{account.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="inline-flex items-center gap-2">
+                    <CategoryIcon
+                      name={account.icon}
+                      className="size-4 text-muted-foreground"
+                    />
+                    {account.name}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Badge variant={account.is_liquid ? "default" : "outline"}>
                     {account.is_liquid ? "Liquid" : "Reserve"}

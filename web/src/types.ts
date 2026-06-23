@@ -6,12 +6,14 @@ export interface Account {
   id: number
   name: string
   is_liquid: boolean
+  icon: string // lucide icon name (kebab-case), "" = none
   balance: string // signed decimal string, from the list endpoint
   created_at: string
 }
 export interface AccountInput {
   name: string
   is_liquid?: boolean
+  icon: string
 }
 
 export interface Category {
@@ -30,10 +32,12 @@ export interface CategoryInput {
 export interface Project {
   id: number
   name: string
+  icon: string // lucide icon name (kebab-case), "" = none
   created_at: string
 }
 export interface ProjectInput {
   name: string
+  icon: string
 }
 
 export type Direction = "income" | "expense" | "transfer"

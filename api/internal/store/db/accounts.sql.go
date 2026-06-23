@@ -12,22 +12,24 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounts (name, is_liquid) VALUES ($1, $2)
-RETURNING id, name, is_liquid, created_at
+INSERT INTO accounts (name, is_liquid, icon) VALUES ($1, $2, $3)
+RETURNING id, name, is_liquid, icon, created_at
 `
 
 type CreateAccountParams struct {
 	Name     string `json:"name"`
 	IsLiquid bool   `json:"is_liquid"`
+	Icon     string `json:"icon"`
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
-	row := q.db.QueryRow(ctx, createAccount, arg.Name, arg.IsLiquid)
+	row := q.db.QueryRow(ctx, createAccount, arg.Name, arg.IsLiquid, arg.Icon)
 	var i Account
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
+		&i.Icon,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -46,7 +48,7 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) (int64, error) {
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, name, is_liquid, created_at FROM accounts WHERE id = $1
+SELECT id, name, is_liquid, icon, created_at FROM accounts WHERE id = $1
 `
 
 func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
@@ -56,13 +58,14 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
+		&i.Icon,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT a.id, a.name, a.is_liquid, a.created_at,
+SELECT a.id, a.name, a.is_liquid, a.icon, a.created_at,
   COALESCE(SUM(CASE WHEN t.is_inflow THEN t.amount ELSE -t.amount END), 0)::numeric(18,2)::text AS balance
 FROM accounts a
 LEFT JOIN transactions t ON t.account_id = a.id
@@ -74,6 +77,7 @@ type ListAccountsRow struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
 	IsLiquid  bool               `json:"is_liquid"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	Balance   string             `json:"balance"`
 }
@@ -91,6 +95,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.ID,
 			&i.Name,
 			&i.IsLiquid,
+			&i.Icon,
 			&i.CreatedAt,
 			&i.Balance,
 		); err != nil {
@@ -105,23 +110,25 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const updateAccount = `-- name: UpdateAccount :one
-UPDATE accounts SET name = $2, is_liquid = $3 WHERE id = $1
-RETURNING id, name, is_liquid, created_at
+UPDATE accounts SET name = $2, is_liquid = $3, icon = $4 WHERE id = $1
+RETURNING id, name, is_liquid, icon, created_at
 `
 
 type UpdateAccountParams struct {
 	ID       int64  `json:"id"`
 	Name     string `json:"name"`
 	IsLiquid bool   `json:"is_liquid"`
+	Icon     string `json:"icon"`
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error) {
-	row := q.db.QueryRow(ctx, updateAccount, arg.ID, arg.Name, arg.IsLiquid)
+	row := q.db.QueryRow(ctx, updateAccount, arg.ID, arg.Name, arg.IsLiquid, arg.Icon)
 	var i Account
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
+		&i.Icon,
 		&i.CreatedAt,
 	)
 	return i, err

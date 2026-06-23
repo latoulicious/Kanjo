@@ -12,6 +12,7 @@ type Account struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
 	IsLiquid  bool               `json:"is_liquid"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -25,6 +26,7 @@ type Category struct {
 type Project struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
