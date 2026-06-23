@@ -54,6 +54,7 @@ func TestTransferRowsWithFee(t *testing.T) {
 	fee := mustAmount(t, "2500")
 	v := validTransfer{
 		date:   pgtype.Date{Valid: true},
+		desc:   "to emergency",
 		from:   1,
 		to:     2,
 		amount: mustAmount(t, "500000"),
@@ -74,6 +75,16 @@ func TestTransferRowsWithFee(t *testing.T) {
 	}
 	if !feeRow.CategoryID.Valid || feeRow.CategoryID.Int64 != 7 {
 		t.Fatalf("fee category not carried: %+v", feeRow.CategoryID)
+	}
+	// fee row reads distinctly from the legs, not a copy of the transfer desc.
+	if feeRow.Description == v.desc || feeRow.Description != "to emergency (fee)" {
+		t.Fatalf("fee desc not distinct: %q", feeRow.Description)
+	}
+}
+
+func TestFeeDescBlank(t *testing.T) {
+	if got := feeDesc(""); got != "Transfer fee" {
+		t.Fatalf("blank desc: want %q, got %q", "Transfer fee", got)
 	}
 }
 

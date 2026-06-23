@@ -206,7 +206,7 @@ func transferRows(v validTransfer, group pgtype.UUID) []db.CreateGroupedTransact
 	if v.fee != nil {
 		rows = append(rows, db.CreateGroupedTransactionParams{
 			OccurredOn:      v.date,
-			Description:     v.desc,
+			Description:     feeDesc(v.desc),
 			Direction:       "expense",
 			IsInflow:        false,
 			Amount:          *v.fee,
@@ -217,6 +217,15 @@ func transferRows(v validTransfer, group pgtype.UUID) []db.CreateGroupedTransact
 		})
 	}
 	return rows
+}
+
+// feeDesc labels the fee row distinctly from its transfer legs so it reads as a
+// fee in the ledger; "Transfer fee" when the transfer has no description.
+func feeDesc(desc string) string {
+	if desc == "" {
+		return "Transfer fee"
+	}
+	return desc + " (fee)"
 }
 
 // newGroupID returns a random v4 UUID for a transfer group (crypto/rand; no dep).

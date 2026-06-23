@@ -111,9 +111,11 @@ app generates), written in **one transaction** via `Store.WithTx`:
 
 Both legs carry the **same** `amount`, so out==in holds by construction (the
 invariant is the app's, not a DB CHECK — a row can't see its siblings). The fee
-is a separate `expense` charged to the source. All rows share `occurred_on`,
-`description`, and `tags`. `category_id`/`project_id` are unset on the legs; the
-fee carries `fee_category_id` when given, else the default "Transfer Fee" category.
+is a separate `expense` charged to the source. All rows share `occurred_on` and
+`tags`; both legs share the `description`, while the **fee row reads distinctly**
+(`"<desc> (fee)"`, or `"Transfer fee"` when the transfer has none) so it stands
+apart in the ledger. `category_id`/`project_id` are unset on the legs; the fee
+carries `fee_category_id` when given, else the default "Transfer Fee" category.
 
 ### Routes (`/api/v1`)
 
