@@ -257,9 +257,7 @@ export function TransferDialog({ open, onOpenChange }: Props) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      Defaults to "Transfer Fee" when left as None.
-                    </FormDescription>
+                    <FormDescription>Defaults to "Transfer Fee".</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
