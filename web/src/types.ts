@@ -91,6 +91,28 @@ export interface TransferResult {
   transactions: Transaction[]
 }
 
+// A saved transaction template surfaced on the dashboard when due. last_posted
+// is the YYYY-MM-DD it was last logged, null = never (always due once past day).
+export interface Recurring {
+  id: number
+  description: string
+  direction: "income" | "expense"
+  amount: string
+  account_id: number
+  category_id: number | null
+  day_of_month: number
+  last_posted: string | null
+  created_at: string
+}
+export interface RecurringInput {
+  description: string
+  direction: "income" | "expense"
+  amount: string
+  account_id: number
+  category_id?: number | null
+  day_of_month: number
+}
+
 export interface ReportSummary {
   from: string
   to: string

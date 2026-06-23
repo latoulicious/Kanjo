@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
+import { toast } from "sonner"
 import {
   Card,
   CardAction,
@@ -23,10 +24,13 @@ import { Button } from "@/components/ui/button"
 import { useResourceList } from "@/lib/resources"
 import { formatAmount, toNumber } from "@/lib/money"
 import { cn } from "@/lib/utils"
-import type { Account, Category } from "@/types"
+import { ApiError } from "@/lib/api"
+import type { Account, Category, Recurring } from "@/types"
 import { CategoryIcon } from "@/features/shared/CategoryIcon"
 import { useSummary, useCategoryReport } from "@/features/reports/hooks"
 import { useTransactions } from "@/features/transactions/hooks"
+import { usePostRecurring } from "@/features/recurring/hooks"
+import { isDue } from "@/lib/recurring"
 import { isoDate, cycleStart } from "@/lib/cycle"
 
 // Dashboard reuses the report summary + ledger list (both server-derived);
@@ -40,6 +44,21 @@ export function DashboardPage() {
   const categories = useResourceList<Category>("categories")
   // Budget status compares each budgeted category against this pay cycle's spend.
   const cycleSpend = useCategoryReport({ from: isoDate(cycleStart()) })
+  // "Due" is computed client-side from day_of_month + last_posted (no cron).
+  const recurring = useResourceList<Recurring>("recurring")
+  const post = usePostRecurring()
+  const due = useMemo(
+    () => (recurring.data ?? []).filter((r) => isDue(r)),
+    [recurring.data],
+  )
+
+  function logDue(rule: Recurring) {
+    post.mutate(rule.id, {
+      onSuccess: () => toast.success("Logged"),
+      onError: (err) =>
+        toast.error(err instanceof ApiError ? err.message : "Log failed"),
+    })
+  }
 
   const budgets = useMemo(() => {
     const spentById = new Map(
@@ -98,6 +117,51 @@ export function DashboardPage() {
         <Metric label="Savings Rate" value={savingsRate} />
         <Metric label="Runway" value={runway} />
       </div>
+
+      {due.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif">Due</CardTitle>
+            <CardDescription>
+              Recurring entries ready to log this cycle.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {due.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between gap-3 text-sm"
+              >
+                <span className="inline-flex items-center gap-2 font-medium">
+                  <CategoryIcon
+                    name={
+                      r.category_id != null
+                        ? categoryById.get(r.category_id)?.icon
+                        : accountById.get(r.account_id)?.icon
+                    }
+                  />
+                  {r.description || (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="font-mono tabular-nums text-muted-foreground">
+                    {formatAmount(r.amount)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={post.isPending}
+                    onClick={() => logDue(r)}
+                  >
+                    Log it
+                  </Button>
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {budgets.length > 0 && (
         <Card>

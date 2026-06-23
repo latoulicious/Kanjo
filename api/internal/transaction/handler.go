@@ -30,6 +30,13 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/transfers", h.createTransfer)
 	mux.HandleFunc("GET /api/v1/transfers/{group_id}", h.getTransfer)
 	mux.HandleFunc("DELETE /api/v1/transfers/{group_id}", h.deleteTransfer)
+
+	mux.HandleFunc("GET /api/v1/recurring", h.listRecurring)
+	mux.HandleFunc("POST /api/v1/recurring", h.createRecurring)
+	mux.HandleFunc("GET /api/v1/recurring/{id}", h.getRecurring)
+	mux.HandleFunc("PUT /api/v1/recurring/{id}", h.updateRecurring)
+	mux.HandleFunc("DELETE /api/v1/recurring/{id}", h.deleteRecurring)
+	mux.HandleFunc("POST /api/v1/recurring/{id}/post", h.postRecurring)
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +155,7 @@ func (h *Handler) fail(w http.ResponseWriter, err error) {
 		errors.Is(err, ErrProjectNotFound), errors.Is(err, ErrFromAccountRequired),
 		errors.Is(err, ErrToAccountRequired), errors.Is(err, ErrSameAccount),
 		errors.Is(err, ErrFromAccountNotFound), errors.Is(err, ErrToAccountNotFound),
-		errors.Is(err, ErrFeeCategoryRequired):
+		errors.Is(err, ErrFeeCategoryRequired), errors.Is(err, ErrBadDay):
 		httpx.WriteErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		httpx.WriteErr(w, http.StatusNotFound, "transaction not found")
