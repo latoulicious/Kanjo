@@ -1,14 +1,14 @@
 -- name: ListAccounts :many
 -- balance is the signed running total of the account's transactions (::text so it
 -- arrives as a decimal string, same wire shape as every other money field).
--- Cash pins last (false sorts before true), then alphabetical.
--- ponytail: magic name; rename "Cash" and it stops pinning — fine for one user.
+-- Cash then Investment pin to the bottom (rest alphabetical above them).
+-- ponytail: magic names; rename "Cash"/"Investment" and they stop pinning — fine for one user.
 SELECT a.id, a.name, a.is_liquid, a.created_at,
   COALESCE(SUM(CASE WHEN t.is_inflow THEN t.amount ELSE -t.amount END), 0)::numeric(18,2)::text AS balance
 FROM accounts a
 LEFT JOIN transactions t ON t.account_id = a.id
 GROUP BY a.id
-ORDER BY (lower(a.name) = 'cash'), a.name;
+ORDER BY (CASE lower(a.name) WHEN 'cash' THEN 1 WHEN 'investment' THEN 2 ELSE 0 END), a.name;
 
 -- name: GetAccount :one
 SELECT id, name, is_liquid, created_at FROM accounts WHERE id = $1;

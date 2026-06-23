@@ -67,7 +67,7 @@ SELECT a.id, a.name, a.is_liquid, a.created_at,
 FROM accounts a
 LEFT JOIN transactions t ON t.account_id = a.id
 GROUP BY a.id
-ORDER BY (lower(a.name) = 'cash'), a.name
+ORDER BY (CASE lower(a.name) WHEN 'cash' THEN 1 WHEN 'investment' THEN 2 ELSE 0 END), a.name
 `
 
 type ListAccountsRow struct {
