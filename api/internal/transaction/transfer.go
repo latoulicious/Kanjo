@@ -19,10 +19,12 @@ var (
 	ErrSameAccount         = errors.New("from_account_id and to_account_id must differ")
 	ErrFromAccountNotFound = errors.New("from_account not found")
 	ErrToAccountNotFound   = errors.New("to_account not found")
-	// A fee is a real expense that lands in burn/category reports; require it to be
-	// categorized so transfer fees don't silently inflate "Uncategorized".
-	ErrFeeCategoryRequired = errors.New("fee_category_id is required when a fee is set")
 )
+
+// defaultFeeCategory is the shared bucket a transfer fee falls into when no
+// fee_category_id is given — a fee is a real expense in burn/category reports, so
+// it must be categorized rather than inflating "Uncategorized". Overridable.
+const defaultFeeCategory = "Transfer Fee"
 
 // TransferInput is the create body. A transfer becomes two grouped transfer legs
 // (out of from, into to) plus an optional expense fee row charged to the source.
@@ -147,11 +149,19 @@ func (s *Service) validateTransfer(ctx context.Context, in TransferInput) (valid
 			return v, err
 		}
 		fee = &f
-		if in.FeeCategoryID == nil {
-			return v, ErrFeeCategoryRequired
-		}
 	}
-	if err := requireRef(ctx, in.FeeCategoryID, s.st.GetCategory, ErrCategoryNotFound); err != nil {
+
+	// A fee with no category falls back to the shared default (get-or-create);
+	// an explicit category is pre-validated like any other FK. No fee ⇒ feeCat
+	// is unused by transferRows, so a stray id is harmless.
+	feeCat := in.FeeCategoryID
+	if fee != nil && feeCat == nil {
+		id, err := s.st.EnsureCategoryByName(ctx, defaultFeeCategory)
+		if err != nil {
+			return v, store.Classify(err)
+		}
+		feeCat = &id
+	} else if err := requireRef(ctx, feeCat, s.st.GetCategory, ErrCategoryNotFound); err != nil {
 		return v, err
 	}
 
@@ -162,7 +172,7 @@ func (s *Service) validateTransfer(ctx context.Context, in TransferInput) (valid
 		to:     in.ToAccountID,
 		amount: amount,
 		fee:    fee,
-		feeCat: toInt8(in.FeeCategoryID),
+		feeCat: toInt8(feeCat),
 		tags:   normalizeTags(in.Tags),
 	}, nil
 }

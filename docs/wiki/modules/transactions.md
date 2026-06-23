@@ -113,7 +113,7 @@ Both legs carry the **same** `amount`, so out==in holds by construction (the
 invariant is the app's, not a DB CHECK — a row can't see its siblings). The fee
 is a separate `expense` charged to the source. All rows share `occurred_on`,
 `description`, and `tags`. `category_id`/`project_id` are unset on the legs; the
-fee carries `fee_category_id` when given.
+fee carries `fee_category_id` when given, else the default "Transfer Fee" category.
 
 ### Routes (`/api/v1`)
 
@@ -143,17 +143,19 @@ delete a transfer: single-entry `DELETE /transactions/{id}` is scoped to
 
 `amount`/`fee` follow the single-entry money rules (positive decimal string).
 Omitting `fee` (or sending `""`/`null`) writes no fee row. When a `fee` **is**
-sent, `fee_category_id` is **required** (→ 400) — the fee is a real expense that
-counts in burn/category reports, so it must be categorized rather than falling
-into "Uncategorized" (the lone divergence from single-entry expenses, which allow
-a null category).
+sent, `fee_category_id` is **optional**: omit it and the fee falls back to a
+shared default category **"Transfer Fee"** (get-or-create on demand); send one to
+override. Either way the fee is categorized — it is a real expense in
+burn/category reports, never left "Uncategorized".
 
 ### Validation & errors
 
 - `from_account_id`/`to_account_id`: required, must exist, **distinct** (→ 400,
   with `from_account`/`to_account`-specific messages).
 - `amount` (and `fee` when present): positive decimal, NUMERIC(18,2) (→ 400).
-- `fee_category_id`: **required when `fee` is set** (→ 400 if missing), must
-  exist (→ 400). Ignored when no fee. All FKs pre-validated (same discipline as
-  single entries; no 409).
+- `fee_category_id`: **optional**. When `fee` is set and it is omitted, the fee
+  defaults to the **"Transfer Fee"** category (`EnsureCategoryByName`, a name-keyed
+  upsert). When **supplied** it is pre-validated like any FK and must exist (→ 400)
+  **regardless of whether a fee is present** — a stray bad id is still rejected; it
+  is merely unused (no fee row consumes it) when there is no fee.
 - group not found (GET/DELETE) → **404** `transfer not found`; bad UUID → 400.

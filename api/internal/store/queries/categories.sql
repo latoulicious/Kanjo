@@ -14,3 +14,12 @@ RETURNING id, name, icon, monthly_budget::text AS monthly_budget, created_at;
 
 -- name: DeleteCategory :execrows
 DELETE FROM categories WHERE id = $1;
+
+-- name: EnsureCategoryByName :one
+-- Get-or-create by unique name; backs the default transfer-fee category so a
+-- fee needs no manual category. DO UPDATE (not DO NOTHING) so RETURNING fires on
+-- conflict.
+-- ponytail: no-op update writes 1 dead tuple/call — negligible single-user.
+INSERT INTO categories (name) VALUES ($1)
+ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+RETURNING id;

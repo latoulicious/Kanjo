@@ -199,3 +199,11 @@ Format per finding:
 - location: web/src/components/ui/sheet.tsx:5
 - problem: review claimed `import { Dialog as SheetPrimitive } from "radix-ui"` points at a non-existent package and suggested `@radix-ui/react-dialog`. False positive: `radix-ui` is the **unified package** (a dependency, `"radix-ui": "^1.6.0"`) that shadcn's current output imports from — every vendored primitive already does this (`dialog.tsx`, `alert-dialog.tsx`, `select.tsx`, `switch.tsx`). `pnpm build` (tsc + vite) is green, so the import resolves and bundles. The suggested per-package path `@radix-ui/react-dialog` is **not installed**; applying it would break the build.
 - status: resolved (→ R-023, wontfix)
+
+## F-024 transfer fee_category_id validated when no fee, doc said "ignored"
+- date: 2026-06-23
+- source: CodeRabbit (`review --agent -t uncommitted`, default-fee-category change) — reported "minor" (×2, same root cause)
+- severity: low (doc/code wording drift, not a behavior bug)
+- location: api/internal/transaction/transfer.go:154-166; docs/wiki/modules/transactions.md
+- problem: review claimed the `else if` running `requireRef` on `fee_category_id` even when `fee` is nil contradicts the doc's "ignored when no fee", and flagged "get-or-created" wording. Context: the **pre-existing** code already validated a stray `fee_category_id` unconditionally (`requireRef` ran on every transfer), so the new code **preserved** that behavior — the real drift is the doc, which read "ignored" too literally.
+- status: resolved (→ R-024, doc fixed; code unchanged)
