@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { Plus, ArrowLeftRight, Pencil, Trash2, X } from "lucide-react"
+import { Plus, ArrowLeftRight, Pencil, Copy, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -59,8 +59,8 @@ export function LedgerPage() {
   const categories = useResourceList<Category>("categories")
   const projects = useResourceList<Project>("projects")
 
-  const accountName = useMemo(
-    () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
+  const accountById = useMemo(
+    () => new Map((accounts.data ?? []).map((a) => [a.id, a])),
     [accounts.data],
   )
   const categoryById = useMemo(
@@ -75,6 +75,7 @@ export function LedgerPage() {
   const [txOpen, setTxOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | undefined>()
+  const [duplicating, setDuplicating] = useState(false)
   const [deleting, setDeleting] = useState<Transaction | undefined>()
   const delTx = useDeleteTransaction()
   const delTransfer = useDeleteTransfer()
@@ -82,10 +83,17 @@ export function LedgerPage() {
 
   function openNew() {
     setEditing(undefined)
+    setDuplicating(false)
     setTxOpen(true)
   }
   function openEdit(tx: Transaction) {
     setEditing(tx)
+    setDuplicating(false)
+    setTxOpen(true)
+  }
+  function openDuplicate(tx: Transaction) {
+    setEditing(tx)
+    setDuplicating(true)
     setTxOpen(true)
   }
 
@@ -226,7 +234,10 @@ export function LedgerPage() {
                     </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {accountName.get(tx.account_id) ?? `#${tx.account_id}`}
+                    <span className="inline-flex items-center gap-2">
+                      <CategoryIcon name={accountById.get(tx.account_id)?.icon} />
+                      {accountById.get(tx.account_id)?.name ?? `#${tx.account_id}`}
+                    </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {tx.category_id != null ? (
@@ -258,14 +269,24 @@ export function LedgerPage() {
                   <TableCell>
                     <div className="flex justify-end gap-1">
                       {!isTransfer && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Edit transaction"
-                          onClick={() => openEdit(tx)}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Edit transaction"
+                            onClick={() => openEdit(tx)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Duplicate transaction"
+                            onClick={() => openDuplicate(tx)}
+                          >
+                            <Copy className="size-4" />
+                          </Button>
+                        </>
                       )}
                       <Button
                         variant="ghost"
@@ -288,6 +309,7 @@ export function LedgerPage() {
         open={txOpen}
         onOpenChange={setTxOpen}
         transaction={editing}
+        duplicate={duplicating}
       />
       <TransferDialog open={transferOpen} onOpenChange={setTransferOpen} />
 

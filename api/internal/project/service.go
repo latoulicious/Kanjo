@@ -23,12 +23,15 @@ var (
 type Project struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
+	Icon      string    `json:"icon"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Input is the create/update body.
+// Input is the create/update body. Icon is a lucide icon name (kebab-case),
+// optional ("" = none).
 type Input struct {
 	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 type Service struct {
@@ -64,7 +67,10 @@ func (s *Service) Create(ctx context.Context, in Input) (Project, error) {
 	if err != nil {
 		return Project{}, err
 	}
-	r, err := s.st.CreateProject(ctx, name)
+	r, err := s.st.CreateProject(ctx, db.CreateProjectParams{
+		Name: name,
+		Icon: store.CleanIcon(in.Icon),
+	})
 	if err != nil {
 		return Project{}, store.Classify(err)
 	}
@@ -79,6 +85,7 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Project, erro
 	r, err := s.st.UpdateProject(ctx, db.UpdateProjectParams{
 		ID:   id,
 		Name: name,
+		Icon: store.CleanIcon(in.Icon),
 	})
 	if err != nil {
 		return Project{}, store.Classify(err)
@@ -101,6 +108,7 @@ func toProject(r db.Project) Project {
 	return Project{
 		ID:        r.ID,
 		Name:      r.Name,
+		Icon:      r.Icon,
 		CreatedAt: r.CreatedAt.Time,
 	}
 }

@@ -6,12 +6,14 @@ export interface Account {
   id: number
   name: string
   is_liquid: boolean
+  icon: string // lucide icon name (kebab-case), "" = none
   balance: string // signed decimal string, from the list endpoint
   created_at: string
 }
 export interface AccountInput {
   name: string
   is_liquid?: boolean
+  icon: string
 }
 
 export interface Category {
@@ -30,10 +32,12 @@ export interface CategoryInput {
 export interface Project {
   id: number
   name: string
+  icon: string // lucide icon name (kebab-case), "" = none
   created_at: string
 }
 export interface ProjectInput {
   name: string
+  icon: string
 }
 
 export type Direction = "income" | "expense" | "transfer"
@@ -85,6 +89,28 @@ export interface TransferInput {
 export interface TransferResult {
   transfer_group_id: string
   transactions: Transaction[]
+}
+
+// A saved transaction template surfaced on the dashboard when due. last_posted
+// is the YYYY-MM-DD it was last logged, null = never (always due once past day).
+export interface Recurring {
+  id: number
+  description: string
+  direction: "income" | "expense"
+  amount: string
+  account_id: number
+  category_id: number | null
+  day_of_month: number
+  last_posted: string | null
+  created_at: string
+}
+export interface RecurringInput {
+  description: string
+  direction: "income" | "expense"
+  amount: string
+  account_id: number
+  category_id?: number | null
+  day_of_month: number
 }
 
 export interface ReportSummary {

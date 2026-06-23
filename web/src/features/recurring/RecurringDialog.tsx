@@ -31,106 +31,85 @@ import {
 } from "@/components/ui/form"
 import { ApiError } from "@/lib/api"
 import { useResourceList } from "@/lib/resources"
-import type { Account, Category, Project, Transaction, TransactionInput } from "@/types"
+import type { Account, Category, Recurring, RecurringInput } from "@/types"
 import { CategoryIcon } from "@/features/shared/CategoryIcon"
-import { useCreateTransaction, useUpdateTransaction } from "./hooks"
-import { NONE, amountField, dateField, splitTags, todayStr } from "./form"
+import { NONE, amountField } from "@/features/transactions/form"
+import { useCreateRecurring, useUpdateRecurring } from "./hooks"
 
 const schema = z.object({
-  occurred_on: dateField,
   description: z.string().max(500, "Max 500 characters"),
   direction: z.enum(["income", "expense"]),
   amount: amountField,
   account_id: z.string().min(1, "Account is required"),
   category_id: z.string(),
-  project_id: z.string(),
-  tags: z.string(),
+  day_of_month: z.coerce.number().int().min(1).max(31),
 })
-type FormValues = z.infer<typeof schema>
+type FormValues = z.input<typeof schema>
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  transaction?: Transaction
-  duplicate?: boolean // pre-fill from transaction but create a new entry (date = today)
+  rule?: Recurring
 }
 
-export function TransactionDialog({
-  open,
-  onOpenChange,
-  transaction,
-  duplicate = false,
-}: Props) {
+export function RecurringDialog({ open, onOpenChange, rule }: Props) {
   const accounts = useResourceList<Account>("accounts")
   const categories = useResourceList<Category>("categories")
-  const projects = useResourceList<Project>("projects")
-  const create = useCreateTransaction()
-  const update = useUpdateTransaction()
-  const editing = transaction != null && !duplicate
+  const create = useCreateRecurring()
+  const update = useUpdateRecurring()
+  const editing = rule != null
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      occurred_on: "",
       description: "",
       direction: "expense",
       amount: "",
       account_id: "",
       category_id: NONE,
-      project_id: NONE,
-      tags: "",
+      day_of_month: 1,
     },
   })
 
   useEffect(() => {
     if (!open) return
     form.reset(
-      transaction
+      rule
         ? {
-            occurred_on: editing ? transaction.occurred_on : todayStr(),
-            description: transaction.description,
-            direction: transaction.direction === "income" ? "income" : "expense",
-            amount: transaction.amount,
-            account_id: String(transaction.account_id),
-            category_id: transaction.category_id
-              ? String(transaction.category_id)
-              : NONE,
-            project_id: transaction.project_id
-              ? String(transaction.project_id)
-              : NONE,
-            tags: transaction.tags.join(", "),
+            description: rule.description,
+            direction: rule.direction,
+            amount: rule.amount,
+            account_id: String(rule.account_id),
+            category_id: rule.category_id ? String(rule.category_id) : NONE,
+            day_of_month: rule.day_of_month,
           }
         : {
-            occurred_on: todayStr(),
             description: "",
             direction: "expense",
             amount: "",
             account_id: "",
             category_id: NONE,
-            project_id: NONE,
-            tags: "",
+            day_of_month: 1,
           },
     )
-  }, [open, transaction, editing, form])
+  }, [open, rule, form])
 
   async function onSubmit(v: FormValues) {
-    const input: TransactionInput = {
-      occurred_on: v.occurred_on,
+    const input: RecurringInput = {
       description: v.description.trim(),
       direction: v.direction,
       amount: v.amount,
       account_id: Number(v.account_id),
       category_id: v.category_id === NONE ? null : Number(v.category_id),
-      project_id: v.project_id === NONE ? null : Number(v.project_id),
-      tags: splitTags(v.tags),
+      day_of_month: Number(v.day_of_month),
     }
     try {
-      if (transaction && !duplicate) {
-        await update.mutateAsync({ id: transaction.id, input })
-        toast.success("Transaction updated")
+      if (rule) {
+        await update.mutateAsync({ id: rule.id, input })
+        toast.success("Recurring updated")
       } else {
         await create.mutateAsync(input)
-        toast.success("Transaction created")
+        toast.success("Recurring created")
       }
       onOpenChange(false)
     } catch (err) {
@@ -138,37 +117,20 @@ export function TransactionDialog({
     }
   }
 
+  const pending = create.isPending || update.isPending
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {editing
-              ? "Edit transaction"
-              : duplicate
-                ? "Duplicate transaction"
-                : "New transaction"}
-          </DialogTitle>
+          <DialogTitle>{editing ? "Edit recurring" : "New recurring"}</DialogTitle>
           <DialogDescription>
-            One ledger entry — income or expense.
+            A saved template — surfaced on the dashboard when it's due to log.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="occurred_on"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="direction"
@@ -265,25 +227,22 @@ export function TransactionDialog({
               />
               <FormField
                 control={form.control}
-                name="project_id"
+                name="day_of_month"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Project</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={NONE}>None</SelectItem>
-                        {projects.data?.map((p) => (
-                          <SelectItem key={p.id} value={String(p.id)}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Day of month</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value as number}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -298,22 +257,9 @@ export function TransactionDialog({
                   <FormControl>
                     <Textarea
                       rows={2}
-                      placeholder="What was this for?"
+                      placeholder="e.g. Game pass"
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <FormControl>
-                    <Input placeholder="comma, separated" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -327,10 +273,7 @@ export function TransactionDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={create.isPending || update.isPending}
-              >
+              <Button type="submit" disabled={pending}>
                 {editing ? "Save" : "Create"}
               </Button>
             </DialogFooter>

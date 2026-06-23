@@ -144,7 +144,10 @@ export function TransferDialog({ open, onOpenChange }: Props) {
                       <SelectContent>
                         {accounts.data?.map((a) => (
                           <SelectItem key={a.id} value={String(a.id)}>
-                            {a.name}
+                            <span className="inline-flex items-center gap-2">
+                              <CategoryIcon name={a.icon} />
+                              {a.name}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -168,7 +171,10 @@ export function TransferDialog({ open, onOpenChange }: Props) {
                       <SelectContent>
                         {accounts.data?.map((a) => (
                           <SelectItem key={a.id} value={String(a.id)}>
-                            {a.name}
+                            <span className="inline-flex items-center gap-2">
+                              <CategoryIcon name={a.icon} />
+                              {a.name}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>

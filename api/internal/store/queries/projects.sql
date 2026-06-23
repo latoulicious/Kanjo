@@ -1,16 +1,16 @@
 -- name: ListProjects :many
-SELECT id, name, created_at FROM projects ORDER BY name;
+SELECT id, name, icon, created_at FROM projects ORDER BY name;
 
 -- name: GetProject :one
-SELECT id, name, created_at FROM projects WHERE id = $1;
+SELECT id, name, icon, created_at FROM projects WHERE id = $1;
 
 -- name: CreateProject :one
-INSERT INTO projects (name) VALUES ($1)
-RETURNING id, name, created_at;
+INSERT INTO projects (name, icon) VALUES ($1, $2)
+RETURNING id, name, icon, created_at;
 
 -- name: UpdateProject :one
-UPDATE projects SET name = $2 WHERE id = $1
-RETURNING id, name, created_at;
+UPDATE projects SET name = $2, icon = $3 WHERE id = $1
+RETURNING id, name, icon, created_at;
 
 -- name: DeleteProject :execrows
 DELETE FROM projects WHERE id = $1;

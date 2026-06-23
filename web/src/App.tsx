@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout"
 import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
 import { LedgerPage } from "@/features/transactions/LedgerPage"
+import { RecurringPage } from "@/features/recurring/RecurringPage"
 import { NameCrud } from "@/features/shared/NameCrud"
 
 // Reports pulls in Recharts (heavy); lazy-load it so the chart bundle only ships
@@ -21,6 +22,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="recurring" element={<RecurringPage />} />
         <Route
           path="categories"
           element={
@@ -44,6 +46,7 @@ export default function App() {
               subtitle="Initiatives that own transactions, so their cost is visible."
               singular="project"
               placeholder="e.g. LazyScan Lite"
+              withIcon
             />
           }
         />

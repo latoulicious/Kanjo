@@ -15,7 +15,6 @@ import (
 
 const (
 	maxNameLen      = 100
-	maxIconLen      = 50 // lucide names are short kebab-case; 50 is generous headroom
 	budgetScale     = 2
 	maxBudgetDigits = 18 // matches NUMERIC(18,2)
 )
@@ -83,7 +82,7 @@ func (s *Service) Create(ctx context.Context, in Input) (Category, error) {
 	}
 	r, err := s.st.CreateCategory(ctx, db.CreateCategoryParams{
 		Name:          name,
-		Icon:          cleanIcon(in.Icon),
+		Icon:          store.CleanIcon(in.Icon),
 		MonthlyBudget: budget,
 	})
 	if err != nil {
@@ -104,7 +103,7 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) (Category, err
 	r, err := s.st.UpdateCategory(ctx, db.UpdateCategoryParams{
 		ID:            id,
 		Name:          name,
-		Icon:          cleanIcon(in.Icon),
+		Icon:          store.CleanIcon(in.Icon),
 		MonthlyBudget: budget,
 	})
 	if err != nil {
@@ -180,17 +179,6 @@ func allDigits(s string) bool {
 		}
 	}
 	return true
-}
-
-// Stored as-is: the picker only sends valid lucide names, so no server-side
-// validation against the icon set.
-// ponytail: length cap only; add a name allowlist if untrusted clients appear.
-func cleanIcon(icon string) string {
-	icon = strings.TrimSpace(icon)
-	if utf8.RuneCountInString(icon) > maxIconLen {
-		return string([]rune(icon)[:maxIconLen])
-	}
-	return icon
 }
 
 func cleanName(name string) (string, error) {

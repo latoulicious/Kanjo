@@ -10,14 +10,19 @@ import (
 )
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (name) VALUES ($1)
-RETURNING id, name, created_at
+INSERT INTO projects (name, icon) VALUES ($1, $2)
+RETURNING id, name, icon, created_at
 `
 
-func (q *Queries) CreateProject(ctx context.Context, name string) (Project, error) {
-	row := q.db.QueryRow(ctx, createProject, name)
+type CreateProjectParams struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
+	row := q.db.QueryRow(ctx, createProject, arg.Name, arg.Icon)
 	var i Project
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }
 
@@ -34,18 +39,18 @@ func (q *Queries) DeleteProject(ctx context.Context, id int64) (int64, error) {
 }
 
 const getProject = `-- name: GetProject :one
-SELECT id, name, created_at FROM projects WHERE id = $1
+SELECT id, name, icon, created_at FROM projects WHERE id = $1
 `
 
 func (q *Queries) GetProject(ctx context.Context, id int64) (Project, error) {
 	row := q.db.QueryRow(ctx, getProject, id)
 	var i Project
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, name, created_at FROM projects ORDER BY name
+SELECT id, name, icon, created_at FROM projects ORDER BY name
 `
 
 func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
@@ -57,7 +62,7 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	var items []Project
 	for rows.Next() {
 		var i Project
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -69,18 +74,19 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 }
 
 const updateProject = `-- name: UpdateProject :one
-UPDATE projects SET name = $2 WHERE id = $1
-RETURNING id, name, created_at
+UPDATE projects SET name = $2, icon = $3 WHERE id = $1
+RETURNING id, name, icon, created_at
 `
 
 type UpdateProjectParams struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+	Icon string `json:"icon"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
-	row := q.db.QueryRow(ctx, updateProject, arg.ID, arg.Name)
+	row := q.db.QueryRow(ctx, updateProject, arg.ID, arg.Name, arg.Icon)
 	var i Project
-	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	err := row.Scan(&i.ID, &i.Name, &i.Icon, &i.CreatedAt)
 	return i, err
 }

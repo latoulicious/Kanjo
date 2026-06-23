@@ -6,6 +6,7 @@ import {
   Wallet,
   Tags,
   FolderKanban,
+  Repeat,
   BarChart3,
   Menu,
 } from "lucide-react"
@@ -25,6 +26,7 @@ const NAV = [
   { to: "/accounts", label: "Accounts", icon: Wallet, end: false },
   { to: "/categories", label: "Categories", icon: Tags, end: false },
   { to: "/projects", label: "Projects", icon: FolderKanban, end: false },
+  { to: "/recurring", label: "Recurring", icon: Repeat, end: false },
   { to: "/reports", label: "Reports", icon: BarChart3, end: false },
 ]
 

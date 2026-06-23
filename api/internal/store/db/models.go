@@ -12,6 +12,7 @@ type Account struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
 	IsLiquid  bool               `json:"is_liquid"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -25,7 +26,20 @@ type Category struct {
 type Project struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
+	Icon      string             `json:"icon"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Recurring struct {
+	ID          int64              `json:"id"`
+	Description string             `json:"description"`
+	Direction   string             `json:"direction"`
+	Amount      pgtype.Numeric     `json:"amount"`
+	AccountID   int64              `json:"account_id"`
+	CategoryID  pgtype.Int8        `json:"category_id"`
+	DayOfMonth  int32              `json:"day_of_month"`
+	LastPosted  pgtype.Date        `json:"last_posted"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type Transaction struct {

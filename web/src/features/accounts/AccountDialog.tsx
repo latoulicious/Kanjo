@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/form"
 import { ApiError } from "@/lib/api"
 import type { Account } from "@/types"
+import { IconPicker } from "@/features/shared/IconPicker"
 import { useCreateAccount, useUpdateAccount } from "./hooks"
 
 // max 100 mirrors the API's name limit (account/service.go).
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Max 100 characters"),
   is_liquid: z.boolean(),
+  icon: z.string(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -47,7 +49,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", is_liquid: true },
+    defaultValues: { name: "", is_liquid: true, icon: "" },
   })
 
   // Load the edited row (or reset to blank) each time the dialog opens.
@@ -56,6 +58,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
       form.reset({
         name: account?.name ?? "",
         is_liquid: account?.is_liquid ?? true,
+        icon: account?.icon ?? "",
       })
     }
   }, [open, account, form])
@@ -97,6 +100,17 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
                   <FormControl>
                     <Input placeholder="e.g. BCA" autoFocus {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Icon</FormLabel>
+                  <IconPicker value={field.value} onChange={field.onChange} />
                   <FormMessage />
                 </FormItem>
               )}
