@@ -7,6 +7,7 @@ export interface Account {
   name: string
   is_liquid: boolean
   icon: string // lucide icon name (kebab-case), "" = none
+  target_amount: string | null // savings goal target, null = plain account
   balance: string // signed decimal string, from the list endpoint
   created_at: string
 }
@@ -14,6 +15,7 @@ export interface AccountInput {
   name: string
   is_liquid?: boolean
   icon: string
+  target_amount?: string | null
 }
 
 export interface Category {
