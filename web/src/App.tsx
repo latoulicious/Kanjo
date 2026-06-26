@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { Layout } from "@/components/Layout"
 import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
+import { GoalsPage } from "@/features/accounts/GoalsPage"
 import { LedgerPage } from "@/features/transactions/LedgerPage"
 import { RecurringPage } from "@/features/recurring/RecurringPage"
 import { NameCrud } from "@/features/shared/NameCrud"
@@ -22,6 +23,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
+        <Route path="goals" element={<GoalsPage />} />
         <Route path="recurring" element={<RecurringPage />} />
         <Route
           path="categories"

@@ -1,3 +1,13 @@
+# HEADS-UP: the generated files in internal/store/db are HAND-TUNED, not vanilla
+# sqlc output. A plain `sqlc generate` (v1.31.1) DIVERGES from what's committed:
+#   - nullable `col::text` projections are widened to pgtype.Text by hand (sqlc
+#     emits plain `string`, which panics scanning a NULL — e.g. accounts.target_amount,
+#     categories.monthly_budget).
+#   - read projections are consolidated into one shared *Row type (e.g. AccountRow,
+#     CategoryRow) instead of per-query Create/Get/Update/List row structs.
+#   - bare table models in models.go omit the text-projected money columns.
+# So DON'T blind-regen: it will rewrite accounts/categories/projects too and break
+# the build. Regenerate one file, then re-apply these three tweaks by hand.
 version: "2"
 sql:
   - engine: postgresql

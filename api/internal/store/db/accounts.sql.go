@@ -12,24 +12,42 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounts (name, is_liquid, icon) VALUES ($1, $2, $3)
-RETURNING id, name, is_liquid, icon, created_at
+INSERT INTO accounts (name, is_liquid, icon, target_amount) VALUES ($1, $2, $3, $4)
+RETURNING id, name, is_liquid, icon, target_amount::text AS target_amount, created_at
 `
 
 type CreateAccountParams struct {
-	Name     string `json:"name"`
-	IsLiquid bool   `json:"is_liquid"`
-	Icon     string `json:"icon"`
+	Name         string         `json:"name"`
+	IsLiquid     bool           `json:"is_liquid"`
+	Icon         string         `json:"icon"`
+	TargetAmount pgtype.Numeric `json:"target_amount"`
 }
 
-func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
-	row := q.db.QueryRow(ctx, createAccount, arg.Name, arg.IsLiquid, arg.Icon)
-	var i Account
+// AccountRow is the read projection: target_amount is cast to text so it
+// arrives as a nullable decimal string (pgtype.Text), not pgtype.Numeric.
+type AccountRow struct {
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	IsLiquid     bool               `json:"is_liquid"`
+	Icon         string             `json:"icon"`
+	TargetAmount pgtype.Text        `json:"target_amount"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (AccountRow, error) {
+	row := q.db.QueryRow(ctx, createAccount,
+		arg.Name,
+		arg.IsLiquid,
+		arg.Icon,
+		arg.TargetAmount,
+	)
+	var i AccountRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
 		&i.Icon,
+		&i.TargetAmount,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -48,24 +66,25 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) (int64, error) {
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, name, is_liquid, icon, created_at FROM accounts WHERE id = $1
+SELECT id, name, is_liquid, icon, target_amount::text AS target_amount, created_at FROM accounts WHERE id = $1
 `
 
-func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
+func (q *Queries) GetAccount(ctx context.Context, id int64) (AccountRow, error) {
 	row := q.db.QueryRow(ctx, getAccount, id)
-	var i Account
+	var i AccountRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
 		&i.Icon,
+		&i.TargetAmount,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listAccounts = `-- name: ListAccounts :many
-SELECT a.id, a.name, a.is_liquid, a.icon, a.created_at,
+SELECT a.id, a.name, a.is_liquid, a.icon, a.target_amount::text AS target_amount, a.created_at,
   COALESCE(SUM(CASE WHEN t.is_inflow THEN t.amount ELSE -t.amount END), 0)::numeric(18,2)::text AS balance
 FROM accounts a
 LEFT JOIN transactions t ON t.account_id = a.id
@@ -74,12 +93,13 @@ ORDER BY (CASE lower(a.name) WHEN 'cash' THEN 1 WHEN 'investment' THEN 2 ELSE 0 
 `
 
 type ListAccountsRow struct {
-	ID        int64              `json:"id"`
-	Name      string             `json:"name"`
-	IsLiquid  bool               `json:"is_liquid"`
-	Icon      string             `json:"icon"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	Balance   string             `json:"balance"`
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	IsLiquid     bool               `json:"is_liquid"`
+	Icon         string             `json:"icon"`
+	TargetAmount pgtype.Text        `json:"target_amount"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Balance      string             `json:"balance"`
 }
 
 func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
@@ -96,6 +116,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.Name,
 			&i.IsLiquid,
 			&i.Icon,
+			&i.TargetAmount,
 			&i.CreatedAt,
 			&i.Balance,
 		); err != nil {
@@ -110,25 +131,33 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 }
 
 const updateAccount = `-- name: UpdateAccount :one
-UPDATE accounts SET name = $2, is_liquid = $3, icon = $4 WHERE id = $1
-RETURNING id, name, is_liquid, icon, created_at
+UPDATE accounts SET name = $2, is_liquid = $3, icon = $4, target_amount = $5 WHERE id = $1
+RETURNING id, name, is_liquid, icon, target_amount::text AS target_amount, created_at
 `
 
 type UpdateAccountParams struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	IsLiquid bool   `json:"is_liquid"`
-	Icon     string `json:"icon"`
+	ID           int64          `json:"id"`
+	Name         string         `json:"name"`
+	IsLiquid     bool           `json:"is_liquid"`
+	Icon         string         `json:"icon"`
+	TargetAmount pgtype.Numeric `json:"target_amount"`
 }
 
-func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error) {
-	row := q.db.QueryRow(ctx, updateAccount, arg.ID, arg.Name, arg.IsLiquid, arg.Icon)
-	var i Account
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (AccountRow, error) {
+	row := q.db.QueryRow(ctx, updateAccount,
+		arg.ID,
+		arg.Name,
+		arg.IsLiquid,
+		arg.Icon,
+		arg.TargetAmount,
+	)
+	var i AccountRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.IsLiquid,
 		&i.Icon,
+		&i.TargetAmount,
 		&i.CreatedAt,
 	)
 	return i, err

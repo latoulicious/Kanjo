@@ -28,12 +28,21 @@ import type { Account } from "@/types"
 import { IconPicker } from "@/features/shared/IconPicker"
 import { useCreateAccount, useUpdateAccount } from "./hooks"
 
-// max 100 mirrors the API's name limit (account/service.go).
-const schema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100, "Max 100 characters"),
-  is_liquid: z.boolean(),
-  icon: z.string(),
-})
+// max 100 mirrors the API's name limit (account/service.go); target_amount
+// rules mirror the category budget field (positive, up to 2 decimals, or blank).
+const schema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required").max(100, "Max 100 characters"),
+    is_liquid: z.boolean(),
+    icon: z.string(),
+    target_amount: z.string(),
+  })
+  .refine(
+    (v) =>
+      v.target_amount === "" ||
+      (/^\d+(\.\d{1,2})?$/.test(v.target_amount) && Number(v.target_amount) > 0),
+    { path: ["target_amount"], message: "Positive amount, up to 2 decimals" },
+  )
 type FormValues = z.infer<typeof schema>
 
 interface Props {
@@ -49,7 +58,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", is_liquid: true, icon: "" },
+    defaultValues: { name: "", is_liquid: true, icon: "", target_amount: "" },
   })
 
   // Load the edited row (or reset to blank) each time the dialog opens.
@@ -59,6 +68,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
         name: account?.name ?? "",
         is_liquid: account?.is_liquid ?? true,
         icon: account?.icon ?? "",
+        target_amount: account?.target_amount ?? "",
       })
     }
   }, [open, account, form])
@@ -132,6 +142,27 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="target_amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Goal target</FormLabel>
+                  <FormControl>
+                    <Input
+                      inputMode="decimal"
+                      placeholder="0"
+                      className="font-mono"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Set a target to track this account as a savings goal. Blank = none.
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
