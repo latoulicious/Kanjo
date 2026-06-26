@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { api, ApiError } from "@/lib/api"
-import { formatAmount } from "@/lib/money"
+import { formatAmount, toNumber } from "@/lib/money"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -121,6 +121,9 @@ export function NameCrud({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<NamedRow | undefined>()
   const [deleting, setDeleting] = useState<NamedRow | undefined>()
+  const [sort, setSort] = useState<{ col: "name" | "budget"; dir: "asc" | "desc" }>(
+    { col: "name", dir: "asc" },
+  )
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -164,6 +167,26 @@ export function NameCrud({
 
   const cols = withBudget ? 3 : 2 // Name + [Budget] + actions
 
+  // Client-side sort + budget subtotal; the list is tiny so no server paging.
+  const sorted = useMemo(() => {
+    if (!rows) return rows
+    return [...rows].sort((a, b) => {
+      const d =
+        sort.col === "name"
+          ? a.name.localeCompare(b.name)
+          : toNumber(a.monthly_budget ?? "0") - toNumber(b.monthly_budget ?? "0")
+      return sort.dir === "asc" ? d : -d
+    })
+  }, [rows, sort])
+  const total = rows?.reduce((s, r) => s + toNumber(r.monthly_budget ?? "0"), 0) ?? 0
+  function toggleSort(col: "name" | "budget") {
+    setSort((s) =>
+      s.col === col
+        ? { col, dir: s.dir === "asc" ? "desc" : "asc" }
+        : { col, dir: "asc" },
+    )
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -185,8 +208,25 @@ export function NameCrud({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              {withBudget && <TableHead className="text-right">Budget</TableHead>}
+              <TableHead>
+                <SortHead
+                  label="Name"
+                  active={sort.col === "name"}
+                  dir={sort.dir}
+                  onClick={() => toggleSort("name")}
+                />
+              </TableHead>
+              {withBudget && (
+                <TableHead className="text-right">
+                  <SortHead
+                    label="Budget"
+                    align="right"
+                    active={sort.col === "budget"}
+                    dir={sort.dir}
+                    onClick={() => toggleSort("budget")}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
@@ -196,7 +236,7 @@ export function NameCrud({
             {rows?.length === 0 && (
               <RowMessage cols={cols}>Nothing here yet.</RowMessage>
             )}
-            {rows?.map((row) => (
+            {sorted?.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">
                   <span className="inline-flex items-center gap-2">
@@ -239,6 +279,15 @@ export function NameCrud({
                 </TableCell>
               </TableRow>
             ))}
+            {withBudget && sorted && sorted.length > 0 && (
+              <TableRow className="border-t-2 border-border font-medium">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
+                  {formatAmount(String(total))}
+                </TableCell>
+                <TableCell />
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -348,6 +397,34 @@ export function NameCrud({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+// Header click toggles sort; arrow (↑/↓) marks the active column. No lucide icon.
+function SortHead({
+  label,
+  active,
+  dir,
+  onClick,
+  align = "left",
+}: {
+  label: string
+  active: boolean
+  dir: "asc" | "desc"
+  onClick: () => void
+  align?: "left" | "right"
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-1 hover:text-foreground ${
+        align === "right" ? "justify-end" : ""
+      }`}
+    >
+      {label}
+      <span className="w-3 text-xs">{active ? (dir === "asc" ? "↑" : "↓") : ""}</span>
+    </button>
   )
 }
 
