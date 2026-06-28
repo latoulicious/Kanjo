@@ -76,7 +76,7 @@ export function Layout() {
           <HealthBadge />
         </div>
       </aside>
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3 md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger className="rounded-md p-1 text-muted-foreground hover:bg-secondary/60 hover:text-foreground">
