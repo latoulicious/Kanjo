@@ -307,7 +307,7 @@ function Metric({ label, value }: { label: string; value: string }) {
         <CardDescription>{label}</CardDescription>
       </CardHeader>
       <CardContent className="px-4">
-        <div className="font-mono text-lg tabular-nums">{value}</div>
+        <div className="font-mono text-base tabular-nums sm:text-lg">{value}</div>
       </CardContent>
     </Card>
   )
