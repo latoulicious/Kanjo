@@ -198,7 +198,9 @@ function Metric({
         <CardDescription>{label}</CardDescription>
       </CardHeader>
       <CardContent className="px-4">
-        <div className={cn("font-mono text-lg tabular-nums", tone)}>{value}</div>
+        <div className={cn("font-mono text-base tabular-nums sm:text-lg", tone)}>
+          {value}
+        </div>
       </CardContent>
     </Card>
   )
