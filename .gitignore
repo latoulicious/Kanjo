@@ -1,1 +1,5 @@
 .env
+
+# internal planning docs
+AGENTS.md
+docs/
