@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { Layout } from "@/components/Layout"
+import { isNative } from "@/lib/platform"
+import { QuickEntryPage } from "@/features/quick/QuickEntryPage"
 import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
 import { GoalsPage } from "@/features/accounts/GoalsPage"
@@ -20,7 +22,8 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<DashboardPage />} />
+        {/* Native is offline-first: quick entry replaces the dashboard, reports need the server. */}
+        <Route index element={isNative ? <QuickEntryPage /> : <DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="goals" element={<GoalsPage />} />
@@ -52,18 +55,20 @@ export default function App() {
             />
           }
         />
-        <Route
-          path="reports"
-          element={
-            <Suspense
-              fallback={
-                <p className="text-sm text-muted-foreground">Loading reports…</p>
-              }
-            >
-              <ReportsPage />
-            </Suspense>
-          }
-        />
+        {!isNative && (
+          <Route
+            path="reports"
+            element={
+              <Suspense
+                fallback={
+                  <p className="text-sm text-muted-foreground">Loading reports…</p>
+                }
+              >
+                <ReportsPage />
+              </Suspense>
+            }
+          />
+        )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
