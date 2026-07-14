@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kanjo</string>
+    <string name="title_activity_main">Kanjo</string>
+    <string name="package_name">dev.kohan.kanjo</string>
+    <string name="custom_url_scheme">dev.kohan.kanjo</string>
+</resources>

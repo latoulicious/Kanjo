@@ -1,0 +1,53 @@
+name: android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["web/**"]
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: npx cap sync android
+
+      - name: Decode signing keystore
+        run: echo "$KEYSTORE_BASE64" | base64 -d > android/kanjo-release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KANJO_KEYSTORE_BASE64 }}
+
+      - name: Build signed APK
+        working-directory: web/android
+        run: ./gradlew assembleRelease
+        env:
+          KANJO_KEYSTORE_PATH: ${{ github.workspace }}/web/android/kanjo-release.keystore
+          KANJO_KEYSTORE_PASSWORD: ${{ secrets.KANJO_KEYSTORE_PASSWORD }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanjo-apk
+          path: web/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
