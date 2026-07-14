@@ -10,12 +10,13 @@ import (
 	"github.com/latoulicious/kanjo/api/internal/project"
 	"github.com/latoulicious/kanjo/api/internal/report"
 	"github.com/latoulicious/kanjo/api/internal/store"
+	"github.com/latoulicious/kanjo/api/internal/syncer"
 	"github.com/latoulicious/kanjo/api/internal/transaction"
 )
 
 // NewMux wires routes. /health stays at root, unversioned; business modules
 // mount their own /api/v1 routes.
-func NewMux(st *store.Store, log *slog.Logger) http.Handler {
+func NewMux(st *store.Store, log *slog.Logger, syncToken string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", health(st, log))
 	account.NewHandler(account.NewService(st), log).Mount(mux)
@@ -23,6 +24,7 @@ func NewMux(st *store.Store, log *slog.Logger) http.Handler {
 	project.NewHandler(project.NewService(st), log).Mount(mux)
 	transaction.NewHandler(transaction.NewService(st), log).Mount(mux)
 	report.NewHandler(report.NewService(st), log).Mount(mux)
+	syncer.NewHandler(syncer.NewService(st), log, syncToken).Mount(mux)
 	return mux
 }
 
