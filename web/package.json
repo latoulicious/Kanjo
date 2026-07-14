@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:db": "node --test test/local-api.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/sqlite": "^8.1.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/core": "^8.4.1",
     "@hookform/resolvers": "^5.4.0",
