@@ -1,6 +1,12 @@
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { Layout } from "@/components/Layout"
+import { isNative } from "@/lib/platform"
+import { autoSyncDue, loadSyncSettings, saveSyncSettings } from "@/lib/sync-settings"
+import { QuickEntryPage } from "@/features/quick/QuickEntryPage"
+import { SyncPage } from "@/features/sync/SyncPage"
 import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { AccountsPage } from "@/features/accounts/AccountsPage"
 import { GoalsPage } from "@/features/accounts/GoalsPage"
@@ -16,11 +22,37 @@ const ReportsPage = lazy(() =>
   })),
 )
 
+// Weekly fallback: sync silently on launch when enabled and >7 days stale.
+function useAutoSync() {
+  const qc = useQueryClient()
+  useEffect(() => {
+    if (!isNative) return
+    const settings = loadSyncSettings()
+    if (!autoSyncDue(settings)) return
+    void (async () => {
+      try {
+        const [{ runSync }, { nativeDb }] = await Promise.all([
+          import("@/lib/db/sync"),
+          import("@/lib/db/native"),
+        ])
+        const result = await runSync(await nativeDb(), settings.url, settings.token)
+        saveSyncSettings({ ...loadSyncSettings(), last: result.syncedAt })
+        await qc.invalidateQueries()
+        toast.success("Weekly sync done")
+      } catch {
+        toast.error("Weekly sync failed — open Sync to retry")
+      }
+    })()
+  }, [qc])
+}
+
 export default function App() {
+  useAutoSync()
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<DashboardPage />} />
+        {/* Native is offline-first: quick entry replaces the dashboard, reports need the server. */}
+        <Route index element={isNative ? <QuickEntryPage /> : <DashboardPage />} />
         <Route path="ledger" element={<LedgerPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="goals" element={<GoalsPage />} />
@@ -52,18 +84,21 @@ export default function App() {
             />
           }
         />
-        <Route
-          path="reports"
-          element={
-            <Suspense
-              fallback={
-                <p className="text-sm text-muted-foreground">Loading reports…</p>
-              }
-            >
-              <ReportsPage />
-            </Suspense>
-          }
-        />
+        {isNative && <Route path="sync" element={<SyncPage />} />}
+        {!isNative && (
+          <Route
+            path="reports"
+            element={
+              <Suspense
+                fallback={
+                  <p className="text-sm text-muted-foreground">Loading reports…</p>
+                }
+              >
+                <ReportsPage />
+              </Suspense>
+            }
+          />
+        )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

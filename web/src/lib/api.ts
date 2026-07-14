@@ -1,15 +1,13 @@
 // Single fetch boundary to the API. Routes are single-origin under /api/v1
 // (nginx in prod, Vite proxy in dev). Errors arrive as {"error": msg}.
-const BASE = "/api/v1"
+// On device there is no server: the same paths are served by the local SQLite
+// store (lib/db), dynamic-imported so the web bundle never ships it.
+import { Capacitor } from "@capacitor/core"
+import { ApiError } from "./api-error"
 
-export class ApiError extends Error {
-  status: number
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "ApiError"
-    this.status = status
-  }
-}
+export { ApiError }
+
+const BASE = "/api/v1"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
@@ -25,11 +23,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T
 }
 
+const native = Capacitor.isNativePlatform()
+
+async function local<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const [{ localRequest }, { nativeDb }] = await Promise.all([
+    import("./db/local-api"),
+    import("./db/native"),
+  ])
+  return localRequest<T>(await nativeDb(), method, path, body)
+}
+
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string) => (native ? local<T>("GET", path) : request<T>(path)),
   post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+    native
+      ? local<T>("POST", path, body)
+      : request<T>(path, { method: "POST", body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
-  del: (path: string) => request<void>(path, { method: "DELETE" }),
+    native
+      ? local<T>("PUT", path, body)
+      : request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
+  del: (path: string) =>
+    native ? local<void>("DELETE", path) : request<void>(path, { method: "DELETE" }),
 }

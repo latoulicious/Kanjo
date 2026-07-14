@@ -9,7 +9,7 @@ export function occurrenceISO(day: number, ref: Date): string {
   const clamp = (year: number, month: number) =>
     Math.min(day, new Date(year, month + 1, 0).getDate())
 
-  let thisMonth = new Date(y, m, clamp(y, m))
+  const thisMonth = new Date(y, m, clamp(y, m))
   if (ref >= thisMonth) return isoDate(thisMonth)
 
   // Not reached yet this month → last occurrence is the previous month.

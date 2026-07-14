@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/latoulicious/kanjo/api/internal/store/db"
@@ -40,6 +41,20 @@ func (s *Store) WithTx(ctx context.Context, fn func(q *db.Queries) error) error 
 	}
 	defer tx.Rollback(ctx) // no-op once committed
 	if err := fn(s.Queries.WithTx(tx)); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// WithRawTx is WithTx with raw pgx access, for SQL that lives outside sqlc
+// (the generated output is hand-tuned; see sqlc.yaml).
+func (s *Store) WithRawTx(ctx context.Context, fn func(tx pgx.Tx) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) // no-op once committed
+	if err := fn(tx); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
