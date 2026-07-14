@@ -11,6 +11,7 @@ import {
   BarChart3,
   Menu,
   Zap,
+  RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { isNative } from "@/lib/platform"
@@ -33,7 +34,11 @@ const COMMON = [
   { to: "/recurring", label: "Recurring", icon: Repeat, end: false },
 ]
 const NAV = isNative
-  ? [{ to: "/", label: "Log", icon: Zap, end: true }, ...COMMON]
+  ? [
+      { to: "/", label: "Log", icon: Zap, end: true },
+      ...COMMON,
+      { to: "/sync", label: "Sync", icon: RefreshCw, end: false },
+    ]
   : [
       { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
       ...COMMON,
