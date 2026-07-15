@@ -10,7 +10,6 @@ import {
   Repeat,
   BarChart3,
   Menu,
-  Zap,
   RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -35,7 +34,7 @@ const COMMON = [
 ]
 const NAV = isNative
   ? [
-      { to: "/", label: "Log", icon: Zap, end: true },
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
       ...COMMON,
       { to: "/sync", label: "Sync", icon: RefreshCw, end: false },
     ]

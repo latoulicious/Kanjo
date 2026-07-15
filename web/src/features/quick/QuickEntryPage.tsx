@@ -21,6 +21,17 @@ import type { Account, Category } from "@/types"
 const AMOUNT_RE = /^\d+(\.\d{1,2})?$/
 const LAST_ACCOUNT = "kanjo.quick.account"
 const LAST_CATEGORY = "kanjo.quick.category"
+const PINNED = "kanjo.quick.pinned"
+
+// null = never configured → show all accounts.
+function loadPinned(): number[] | null {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(PINNED) ?? "null")
+    return Array.isArray(parsed) ? parsed.filter((n): n is number => Number.isInteger(n)) : null
+  } catch {
+    return null
+  }
+}
 
 export function QuickEntryPage() {
   const accounts = useResourceList<Account>("accounts")
@@ -35,6 +46,19 @@ export function QuickEntryPage() {
   const [occurredOn, setOccurredOn] = useState(todayStr())
   const [accountId, setAccountId] = useState(() => localStorage.getItem(LAST_ACCOUNT) ?? "")
   const [categoryId, setCategoryId] = useState(() => localStorage.getItem(LAST_CATEGORY) ?? NONE)
+  const [pinned, setPinned] = useState<number[] | null>(loadPinned)
+  const [editingPins, setEditingPins] = useState(false)
+
+  function togglePin(id: number) {
+    const all = accounts.data?.map((a) => a.id) ?? []
+    const current = pinned ?? all
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    setPinned(next)
+    localStorage.setItem(PINNED, JSON.stringify(next))
+  }
+
+  const isPinned = (id: number) => pinned == null || pinned.includes(id)
+  const cards = editingPins ? accounts.data : accounts.data?.filter((a) => isPinned(a.id))
 
   async function save() {
     if (create.isPending) return
@@ -152,13 +176,42 @@ export function QuickEntryPage() {
         </Button>
       </form>
 
-      <section className="grid grid-cols-2 gap-2">
-        {accounts.data?.map((a) => (
-          <div key={a.id} className="rounded-md border border-border bg-card px-3 py-2">
-            <p className="truncate text-xs text-muted-foreground">{a.name}</p>
-            <p className="font-mono text-sm">{formatAmount(a.balance)}</p>
-          </div>
-        ))}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">Accounts</h2>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => setEditingPins((e) => !e)}
+          >
+            {editingPins ? "Done" : "Edit"}
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {cards?.map((a) =>
+            editingPins ? (
+              <button
+                key={a.id}
+                type="button"
+                aria-pressed={isPinned(a.id)}
+                aria-label={`${isPinned(a.id) ? "Unpin" : "Pin"} ${a.name}`}
+                onClick={() => togglePin(a.id)}
+                className={cn(
+                  "rounded-md border px-3 py-2 text-left",
+                  isPinned(a.id) ? "border-foreground/40 bg-card" : "border-dashed border-border bg-card opacity-40",
+                )}
+              >
+                <p className="truncate text-xs text-muted-foreground">{a.name}</p>
+                <p className="font-mono text-sm">{formatAmount(a.balance)}</p>
+              </button>
+            ) : (
+              <div key={a.id} className="rounded-md border border-border bg-card px-3 py-2">
+                <p className="truncate text-xs text-muted-foreground">{a.name}</p>
+                <p className="font-mono text-sm">{formatAmount(a.balance)}</p>
+              </div>
+            ),
+          )}
+        </div>
       </section>
 
       <section>
