@@ -9,6 +9,8 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # rolling "latest" release upload
     defaults:
       run:
         working-directory: web
@@ -46,7 +48,21 @@ jobs:
           KANJO_KEYSTORE_PATH: ${{ github.workspace }}/web/android/kanjo-release.keystore
           KANJO_KEYSTORE_PASSWORD: ${{ secrets.KANJO_KEYSTORE_PASSWORD }}
 
+      - name: Publish APK to rolling release
+        if: github.ref == 'refs/heads/main'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp web/android/app/build/outputs/apk/release/app-release.apk kanjo.apk
+          gh release view latest >/dev/null 2>&1 || \
+            gh release create latest --title "Kanjo APK (rolling)" --notes "Always the newest APK built from main." --prerelease
+          gh release upload latest kanjo.apk --clobber
+          gh release edit latest --notes "Built from \`${GITHUB_SHA::7}\` on $(date -u +%Y-%m-%d)."
+
+      # Non-main runs (workflow_dispatch on branches) still get an artifact.
       - uses: actions/upload-artifact@v4
+        if: github.ref != 'refs/heads/main'
         with:
           name: kanjo-apk
           path: web/android/app/build/outputs/apk/release/app-release.apk
