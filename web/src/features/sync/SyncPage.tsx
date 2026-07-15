@@ -19,18 +19,21 @@ export function SyncPage() {
     saveSyncSettings(next)
   }
 
-  async function syncNow() {
+  async function run(repair: boolean) {
     if (!settings.url) {
       toast.error("Set the server URL first")
       return
     }
     setBusy(true)
     try {
-      const [{ runSync }, { nativeDb }] = await Promise.all([
+      const [{ runSync, repairSync }, { nativeDb }] = await Promise.all([
         import("@/lib/db/sync"),
         import("@/lib/db/native"),
       ])
-      const result = await runSync(await nativeDb(), settings.url, settings.token)
+      const db = await nativeDb()
+      const result = repair
+        ? await repairSync(db, settings.url, settings.token)
+        : await runSync(db, settings.url, settings.token)
       update({ last: result.syncedAt })
       await qc.invalidateQueries()
       toast.success(`Synced — ${result.pushed} change${result.pushed === 1 ? "" : "s"} pushed`)
@@ -39,6 +42,11 @@ export function SyncPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  function repairNow() {
+    if (!window.confirm("Re-link this phone with the server? Use after a server restore. Entries logged on this phone are kept.")) return
+    void run(true)
   }
 
   return (
@@ -80,13 +88,22 @@ export function SyncPage() {
         </div>
       </div>
 
-      <Button size="lg" onClick={() => void syncNow()} disabled={busy}>
+      <Button size="lg" onClick={() => void run(false)} disabled={busy}>
         {busy ? "Syncing…" : "Sync now"}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
         {settings.last ? `Last synced ${new Date(settings.last).toLocaleString()}` : "Never synced"}
       </p>
+
+      <div className="rounded-md border border-border px-3 py-3">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Server restored from a backup and sync now fails? Repair re-links this phone to the restored data. Entries logged here are kept.
+        </p>
+        <Button variant="outline" className="w-full" onClick={repairNow} disabled={busy}>
+          Repair sync
+        </Button>
+      </div>
     </div>
   )
 }

@@ -370,15 +370,7 @@ export interface SyncResult {
   syncedAt: string
 }
 
-export async function runSync(db: Db, url: string, token: string): Promise<SyncResult> {
-  const changes = await collectChanges(db)
-  const pushed =
-    changes.accounts.length +
-    changes.categories.length +
-    changes.projects.length +
-    changes.transactions.length +
-    changes.recurring.length
-
+async function postSync(url: string, token: string, changes: Changes) {
   const res = await fetch(`${url.replace(/\/+$/, "")}/api/v1/sync`, {
     method: "POST",
     headers: {
@@ -390,8 +382,30 @@ export async function runSync(db: Db, url: string, token: string): Promise<SyncR
   const body = (await res.json().catch(() => null)) as { error?: string; snapshot?: Changes; synced_at?: string } | null
   if (!res.ok) throw new ApiError(res.status, body?.error ?? `sync failed (${res.status})`)
   if (!body?.snapshot) throw new ApiError(502, "malformed sync response")
+  return body
+}
 
+const noChanges = (): Changes => ({ accounts: [], categories: [], projects: [], transactions: [], recurring: [] })
+
+export async function runSync(db: Db, url: string, token: string): Promise<SyncResult> {
+  const changes = await collectChanges(db)
+  const pushed =
+    changes.accounts.length +
+    changes.categories.length +
+    changes.projects.length +
+    changes.transactions.length +
+    changes.recurring.length
+
+  const body = await postSync(url, token, changes)
   await finalizePush(db, changes)
-  await applySnapshot(db, body.snapshot)
+  await applySnapshot(db, body.snapshot!)
   return { pushed, syncedAt: body.synced_at ?? new Date().toISOString() }
+}
+
+// Server-restore recovery: pull-only pass re-keys local rows to the server's
+// regenerated uuids (dirty rows survive), then a normal sync pushes them.
+export async function repairSync(db: Db, url: string, token: string): Promise<SyncResult> {
+  const body = await postSync(url, token, noChanges())
+  await applySnapshot(db, body.snapshot!)
+  return runSync(db, url, token)
 }
