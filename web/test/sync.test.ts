@@ -143,3 +143,59 @@ test("apply inserts server rows, maps refs, reconciles deletes, adopts by name",
   const after = await c<Transaction[]>("GET", "/transactions")
   assert.deepEqual(after.map((t) => t.description), ["unsynced"])
 })
+
+test("repair scenario: server-restore uuids re-key, dirty rows push under new refs", async () => {
+  const db = await freshDb()
+  const c = call(db)
+  const acc = await c<Account>("POST", "/accounts", { name: "Cash", icon: "" })
+  const syncedTx = await c<Transaction>("POST", "/transactions", {
+    occurred_on: "2026-07-01",
+    description: "synced",
+    direction: "expense",
+    amount: "1.00",
+    account_id: acc.id,
+    tags: [],
+  })
+  await finalizePush(db, await collectChanges(db)) // everything clean = previously synced
+  void syncedTx
+
+  // Unsynced entry logged after the server was restored from an old dump.
+  await c<Transaction>("POST", "/transactions", {
+    occurred_on: "2026-07-05",
+    description: "unsynced",
+    direction: "expense",
+    amount: "3.00",
+    account_id: acc.id,
+    tags: [],
+  })
+
+  // Restored server: same data, regenerated uuids.
+  const snap = empty()
+  snap.accounts = [
+    { uuid: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Cash", is_liquid: true, icon: "", target_amount: null, updated_at: "2099-01-01T00:00:00Z" },
+  ]
+  snap.transactions = [
+    {
+      uuid: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      occurred_on: "2026-07-01",
+      description: "synced",
+      direction: "expense",
+      is_inflow: false,
+      amount: "1.00",
+      account_uuid: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      category_uuid: null,
+      project_uuid: null,
+      transfer_group_id: null,
+      tags: [],
+      updated_at: "2099-01-01T00:00:00Z",
+    },
+  ]
+  await applySnapshot(db, snap) // the pull-only repair pass
+
+  const changes = await collectChanges(db)
+  assert.equal(changes.transactions.length, 1)
+  assert.equal(changes.transactions[0].description, "unsynced")
+  assert.equal(changes.transactions[0].account_uuid, "dddddddd-dddd-4ddd-8ddd-dddddddddddd") // re-keyed ref
+  const txs = await c<Transaction[]>("GET", "/transactions")
+  assert.deepEqual(txs.map((t) => t.description).sort(), ["synced", "unsynced"]) // no dupes, nothing lost
+})
