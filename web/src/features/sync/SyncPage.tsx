@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { ApiError } from "@/lib/api"
 import { loadSyncSettings, saveSyncSettings } from "@/lib/sync-settings"
@@ -54,7 +53,7 @@ export function SyncPage() {
       <div>
         <h1 className="text-lg font-medium">Sync</h1>
         <p className="text-sm text-muted-foreground">
-          Push this phone's ledger to your server and pull everything back. Optional — the app is fully local without it.
+          Set a server URL and the app syncs automatically each time you open it. Leave it empty and the app stays fully local.
         </p>
       </div>
 
@@ -79,12 +78,6 @@ export function SyncPage() {
             value={settings.token}
             onChange={(e) => update({ token: e.target.value.trim() })}
           />
-        </div>
-        <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
-          <Label htmlFor="sync-auto" className="font-normal">
-            Auto-sync weekly on launch
-          </Label>
-          <Switch id="sync-auto" checked={settings.auto} onCheckedChange={(auto) => update({ auto })} />
         </div>
       </div>
 

@@ -22,7 +22,6 @@ const ReportsPage = lazy(() =>
   })),
 )
 
-// Weekly fallback: sync silently on launch when enabled and >7 days stale.
 function useAutoSync() {
   const qc = useQueryClient()
   useEffect(() => {
@@ -38,9 +37,8 @@ function useAutoSync() {
         const result = await runSync(await nativeDb(), settings.url, settings.token)
         saveSyncSettings({ ...loadSyncSettings(), last: result.syncedAt })
         await qc.invalidateQueries()
-        toast.success("Weekly sync done")
       } catch {
-        toast.error("Weekly sync failed — open Sync to retry")
+        toast.error("Sync failed — open Sync to retry")
       }
     })()
   }, [qc])
