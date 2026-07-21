@@ -55,6 +55,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp web/android/app/build/outputs/apk/release/app-release.apk kanjo.apk
+          git tag -f latest "$GITHUB_SHA"
+          git push -f origin latest
           gh release view latest >/dev/null 2>&1 || \
             gh release create latest --title "Kanjo APK (rolling)" --notes "Always the newest APK built from main." --prerelease
           gh release upload latest kanjo.apk --clobber
