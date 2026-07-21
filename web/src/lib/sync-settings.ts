@@ -2,21 +2,28 @@
 export interface SyncSettings {
   url: string
   token: string
-  auto: boolean // weekly fallback: sync on launch when last sync > 7 days old
   last: string | null
 }
 
 const KEY = "kanjo.sync"
-export const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+function isSyncSettings(v: unknown): v is SyncSettings {
+  if (typeof v !== "object" || v === null) return false
+  const o = v as Record<string, unknown>
+  return typeof o.url === "string" && typeof o.token === "string" && (o.last === null || typeof o.last === "string")
+}
 
 export function loadSyncSettings(): SyncSettings {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return { url: "", token: "", auto: false, last: null, ...(JSON.parse(raw) as Partial<SyncSettings>) }
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      if (isSyncSettings(parsed)) return { url: parsed.url, token: parsed.token, last: parsed.last }
+    }
   } catch {
     // corrupted settings fall back to defaults
   }
-  return { url: "", token: "", auto: false, last: null }
+  return { url: "", token: "", last: null }
 }
 
 export function saveSyncSettings(s: SyncSettings): void {
@@ -24,7 +31,5 @@ export function saveSyncSettings(s: SyncSettings): void {
 }
 
 export function autoSyncDue(s: SyncSettings): boolean {
-  if (!s.auto || !s.url) return false
-  const last = s.last == null ? NaN : Date.parse(s.last)
-  return !Number.isFinite(last) || Date.now() - last > WEEK_MS
+  return s.url !== ""
 }
